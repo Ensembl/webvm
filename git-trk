@@ -1,0 +1,3 @@
+#! /bin/sh
+
+exec git --work-tree=/www --git-dir=$HOME/gitwk-anacode/web-ottersand01.git/ "$@"

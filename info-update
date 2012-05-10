@@ -1,0 +1,9 @@
+#! /bin/sh
+
+set -e
+set -x
+OUTDIR="/www/tmp/mca/$(hostname -s).info"
+mkdir -p "$OUTDIR"
+COLUMNS=200 dpkg -l > "$OUTDIR/dpkg-l"
+lsb_release -a > "$OUTDIR/lsb_release-a" 2>&1
+find /www -ls > "$OUTDIR/find.www.-ls" 2>&1 || true
