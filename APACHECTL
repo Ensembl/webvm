@@ -1,0 +1,26 @@
+#! /bin/sh
+
+dir="$( dirname $( readlink -e $0 ) )"
+# GNU-ism.
+
+op=${1:-$( basename $0 )}
+
+echo "[d] doing $op for $dir"
+case $op in
+    -h | --help)
+        cat <<INFO
+Syntax: APACHECTL < start | stop | graceful >
+    or  run via a symlink with one of these names
+INFO
+        exit 0
+        ;;
+    start | stop | graceful)
+        exec /usr/sbin/apache2ctl -d $dir/ServerRoot -k $op
+        ;;
+    *)
+        echo "Cannot comprehend op=$op" >&2
+        exit 1
+        ;;
+esac
+
+# not reached - exec | exit
