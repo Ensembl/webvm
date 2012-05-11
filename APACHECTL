@@ -11,11 +11,17 @@ case $op in
         cat <<INFO
 Syntax: APACHECTL < start | stop | graceful >
     or  run via a symlink with one of these names
+
+More options later.
+
 INFO
         exit 0
         ;;
     start | stop | graceful)
-        exec /usr/sbin/apache2ctl -d $dir/ServerRoot -k $op
+        exec /usr/sbin/apache2ctl \
+            -f conf/httpd.conf \
+            -d $dir/ServerRoot \
+            -k $op
         ;;
     *)
         echo "Cannot comprehend op=$op" >&2
