@@ -1,0 +1,23 @@
+#! /bin/sh
+
+set -e
+
+mkdir -p webcontent
+
+git mv htdocs    webcontent
+git mv apache2   webcontent
+git mv utilities webcontent
+
+git rm -q -rf config
+
+find lib webcontent \
+    -type f -print0 | xargs -r0 perl -i -pe \
+    's{\$(Author|Date|Id|HeadURL|Revision):[^\$]*\$}{\$$1\$}g'
+
+find lib webcontent \
+    -type f -print0 | xargs -r0 perl -ne \
+    'warn "$ARGV:$.: $1 keyword may be in use? $_" if m{\$(Author|Date|HeadURL|Id|Revision)(:.*)?\$} &&
+      ! m{^\s*(#|\*\s+\@version:|//)}; close ARGV if eof'
+
+git add -A lib webcontent
+git ci -m "fixups by $0"
