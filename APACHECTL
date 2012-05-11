@@ -18,9 +18,10 @@ INFO
         exit 0
         ;;
     start | stop | graceful)
-        exec /usr/sbin/apache2ctl \
+        exec /usr/sbin/apache2 \
             -f conf/httpd.conf \
             -d $dir/ServerRoot \
+            -C "Include conf/user/$USER.conf" \
             -k $op
         ;;
     *)
