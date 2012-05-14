@@ -44,7 +44,7 @@ Then you
 *** What should it do?
 Run for anyone, independent of location, like this
 
- /usr/sbin/apache2ctl -d /www/$USER/ServerRoot
+ /usr/sbin/apache2ctl -f /www/$USER/ServerRoot/conf/httpd.conf ...
 
 which is cumbersome, so use
 
