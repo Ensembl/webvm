@@ -1,11 +1,19 @@
 #! /bin/sh
 
-dir="$( dirname $( readlink -e $0 ) )"
-# GNU-ism.
+WEBDIR="$( dirname $( readlink -e $0 ) )"
+# XXX:UBUNTU GNU-ism.
+
+: ${WEBTMPDIR:="$( dirname "$WEBDIR" )/tmp/$( basename "$WEBDIR" )"}
+[ -d "$WEBTMPDIR" ] && [ -w "$WEBTMPDIR" ] || {
+    echo "Abort: Guessed WEBTMPDIR=$WEBTMPDIR incorrectly, please override by environment" >&2
+    exit 2
+}
+
+export WEBDIR WEBTMPDIR
 
 op=${1:-$( basename $0 )}
 
-echo "[d] doing $op for $dir"
+echo "[d] doing $op for WEBDIR=$WEBDIR WEBTMPDIR=$WEBTMPDIR"
 case $op in
     -h | --help)
         cat <<INFO
@@ -19,9 +27,7 @@ INFO
         ;;
     start | stop | graceful)
         exec /usr/sbin/apache2 \
-            -f conf/httpd.conf \
-            -d $dir/ServerRoot \
-            -C "Include conf/user/$USER.conf" \
+            -f "$WEBDIR/ServerRoot/conf/httpd.conf" \
             -k $op
         ;;
     *)

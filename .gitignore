@@ -1,7 +1,3 @@
 
 # emacs ignorance
 *~
-
-# XXX:LOCALMOD symlink ServerRoot/logs to user's tmpdir.
-# by setup.user.sh
-ServerRoot/logs
