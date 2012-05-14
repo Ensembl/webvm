@@ -98,6 +98,9 @@ Then I started replacing them with things that work.
   TransferLog "/ServerRoot_B0RK/logs/access_log"
   XX:LOCALMOD symlink ServerRoot/logs to user's tmpdir.
 
+*** XXX:TODO tell CGI scripts when request is internal
+Need to check or replace the HTTP_CLIENTREALM mechanism, used by $erverScriptSupport->local_user
+
 *** XXX:TODO trigger DEVEL mode
 based on what,
  the hostname?
