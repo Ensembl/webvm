@@ -32,6 +32,9 @@ If you are root (e.g. install to laptop), use
 Otherwise you need root to do the equivalent operations, and/or
 install from tarball and set up in your home directory.
 
+Note that running on Mac is not (yet) supported and would require
+chasing out the Ubuntu dependencies.
+
 
 Then you
   # repo override only needed until it moves to team area
