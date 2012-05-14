@@ -97,3 +97,9 @@ Then I started replacing them with things that work.
   SSLSessionCache        "shmcb:/ServerRoot_B0RK/logs/ssl_scache(512000)"
   TransferLog "/ServerRoot_B0RK/logs/access_log"
   XX:LOCALMOD symlink ServerRoot/logs to user's tmpdir.
+
+*** XXX:TODO trigger DEVEL mode
+based on what,
+ the hostname?
+ (untracked or locally modified) config file?
+ being a user not www-anacode?
