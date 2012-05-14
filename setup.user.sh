@@ -24,7 +24,9 @@ git clone "$WEBVM" "$WEBROOT/$FOR_USER"
 #
 # There may be a neater way to point there (like "apache2 -c"?) but
 # this is good enough for now.
+#
+# Some files stored here insist on being on local disk.
 
-LOGDIR="$WEBVM/tmp/$FOR_USER/logs"
+LOGDIR="$WEBROOT/tmp/$FOR_USER/logs"
 mkdir -p -v "$LOGDIR"
 ln -s -v "$LOGDIR" "$WEBROOT/$FOR_USER/ServerRoot/logs"
