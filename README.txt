@@ -109,3 +109,5 @@ based on what,
  the hostname?
  (untracked or locally modified) config file?
  being a user not www-anacode?
+
+It may be set manually with WEBDEFS=DEVEL

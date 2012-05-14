@@ -9,11 +9,19 @@ WEBDIR="$( dirname $( readlink -e $0 ) )"
     exit 2
 }
 
+apache_defines() {
+    local tok out
+    for tok in $( echo ${WEBDEFS:-vanilla} | tr , ' ' ); do
+	out="$out -D $( echo "$tok" | tr '[:lower:]' '[:upper:]' )"
+    done
+    echo "$out"
+}
+
 export WEBDIR WEBTMPDIR
 
 op=${1:-$( basename $0 )}
 
-echo "[d] doing $op for WEBDIR=$WEBDIR WEBTMPDIR=$WEBTMPDIR"
+echo "[d] doing $op for WEBDIR=$WEBDIR WEBTMPDIR=$WEBTMPDIR with" $( apache_defines )
 case $op in
     -h | --help)
         cat <<INFO
@@ -27,6 +35,7 @@ INFO
         ;;
     start | stop | graceful)
         exec /usr/sbin/apache2 \
+	    $( apache_defines )
             -f "$WEBDIR/ServerRoot/conf/httpd.conf" \
             -k $op
         ;;
