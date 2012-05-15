@@ -111,3 +111,27 @@ based on what,
  being a user not www-anacode?
 
 It may be set manually with WEBDEFS=DEVEL
+
+** Git branch structure
+Initial plan...
+
+ master		Minimal Apache config and consensus set of tools.
+		This branch should be useful for merge into any other.
+
+ $USER or
+ $USER/*	your stuff
+		  e.g. mca/sandbox mca/deskpro
+
+ www-anacode	One branch for both dev & live, because
+		we have internal structure to separate them
+
+
+$USER branches which collect a large number of commits for dev
+Otterlace builds could be reset by
+
+ a) cherry pick or otherwise copy useful stuff onto master or
+    $USER/master
+
+ b) rewind the branch on intcvs1 to master or $USER/master
+
+ c) have the deployment scripts accept forced updates
