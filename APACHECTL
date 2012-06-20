@@ -5,7 +5,7 @@ WEBDIR="$( dirname $( readlink -e $0 ) )"
 
 : ${WEBTMPDIR:="$( dirname "$WEBDIR" )/tmp/$( basename "$WEBDIR" )"}
 [ -d "$WEBTMPDIR" ] && [ -w "$WEBTMPDIR" ] || {
-    echo "Abort: Guessed WEBTMPDIR=$WEBTMPDIR incorrectly, please override by environment" >&2
+    echo "Abort: Guessed WEBTMPDIR=$WEBTMPDIR incorrectly, please have it created & writable, or override by environment" >&2
     exit 2
 }
 
@@ -25,17 +25,19 @@ echo "[d] doing $op for WEBDIR=$WEBDIR WEBTMPDIR=$WEBTMPDIR with" $( apache_defi
 case $op in
     -h | --help)
         cat <<INFO
-Syntax: APACHECTL < start | stop | graceful >
+Syntax: APACHECTL < start | restart | graceful | graceful-stop | stop >
     or  run via a symlink with one of these names
 
 More options later.
 
+Environment variables affecting the run are documented in README.txt
+
 INFO
         exit 0
         ;;
-    start | stop | graceful)
+    start|restart|graceful|graceful-stop|stop) # supported by "apache2 -k"
         exec /usr/sbin/apache2 \
-	    $( apache_defines )
+	    $( apache_defines ) \
             -f "$WEBDIR/ServerRoot/conf/httpd.conf" \
             -k $op
         ;;

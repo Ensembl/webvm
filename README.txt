@@ -1,7 +1,7 @@
 -*- org -*-
+#+STARTUP: showall
 
-In Emacs & new to org-mode?  Move to Documentation line and hit TAB
-twice.  Heading levels are indicated by lines =~ m{^\*+}
+Heading levels are indicated by lines =~ m{^\*+}
 
 * Documentation
 ** What is this config?
@@ -33,7 +33,8 @@ Otherwise you need root to do the equivalent operations, and/or
 install from tarball and set up in your home directory.
 
 Note that running on Mac is not (yet) supported and would require
-chasing out the Ubuntu dependencies.
+chasing out the Ubuntu dependencies.  Some of these are marked with
+[X]XX:UBUNTU.
 
 
 Then you
@@ -52,6 +53,28 @@ which is cumbersome, so use
  /www/$USER/stop
 
 Possible actions/options for that script are likely to change.
+
+** Environment variables
+*** WEBDIR
+WEBDIR points to the git working copy.  It contains your ServerRoot,
+htdocs etc..
+
+This variable is built from $0
+*** WEBTMPDIR
+By the web team's convention, host-specific writable files are kept
+separate.  This makes it clear what files should not be copied, when
+cloning a machine.  WEBTMPDIR is that directory.
+
+It defaults to something like /www/tmp/$USER but is derived from
+WEBDIR, unless a value is passed in.
+*** WEBDEFS
+WEBDEFS takes comma-separated keywords to pass as "apache2 -D" flags.
+
+It currently defaults to "vanilla", but this may change.
+
+Useful options are
++ DEVEL :: enable the server-status & server-info pages.  This comes from our config.
++ DEBUG :: to run a single Apache thread and stop it going into the background.  This is an Apache option.
 
 ** ServerConf/conf/ contents
 *** What is /ServerRoot_B0RK ?
