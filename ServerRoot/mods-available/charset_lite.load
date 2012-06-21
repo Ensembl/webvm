@@ -1,1 +1,3 @@
+<IfModule !charset_lite_module>
 LoadModule charset_lite_module /usr/lib/apache2/modules/mod_charset_lite.so
+</IfModule>

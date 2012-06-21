@@ -1,1 +1,3 @@
+<IfModule !log_forensic_module>
 LoadModule log_forensic_module /usr/lib/apache2/modules/mod_log_forensic.so
+</IfModule>

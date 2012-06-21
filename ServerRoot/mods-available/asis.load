@@ -1,1 +1,3 @@
+<IfModule !asis_module>
 LoadModule asis_module /usr/lib/apache2/modules/mod_asis.so
+</IfModule>

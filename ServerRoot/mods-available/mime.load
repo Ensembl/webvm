@@ -1,1 +1,3 @@
+<IfModule !mime_module>
 LoadModule mime_module /usr/lib/apache2/modules/mod_mime.so
+</IfModule>

@@ -1,1 +1,3 @@
+<IfModule !usertrack_module>
 LoadModule usertrack_module /usr/lib/apache2/modules/mod_usertrack.so
+</IfModule>

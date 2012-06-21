@@ -1,1 +1,3 @@
+<IfModule !apreq_module>
 LoadModule apreq_module /usr/lib/apache2/modules/mod_apreq2.so
+</IfModule>

@@ -1,1 +1,3 @@
+<IfModule !actions_module>
 LoadModule actions_module /usr/lib/apache2/modules/mod_actions.so
+</IfModule>

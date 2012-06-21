@@ -1,1 +1,3 @@
+<IfModule !dumpio_module>
 LoadModule dumpio_module /usr/lib/apache2/modules/mod_dumpio.so
+</IfModule>

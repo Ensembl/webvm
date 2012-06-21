@@ -1,1 +1,3 @@
+<IfModule !perl_module>
 LoadModule perl_module /usr/lib/apache2/modules/mod_perl.so
+</IfModule>

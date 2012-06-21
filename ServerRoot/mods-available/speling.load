@@ -1,1 +1,3 @@
+<IfModule !speling_module>
 LoadModule speling_module /usr/lib/apache2/modules/mod_speling.so
+</IfModule>

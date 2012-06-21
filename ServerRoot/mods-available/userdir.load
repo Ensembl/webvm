@@ -1,1 +1,3 @@
+<IfModule !userdir_module>
 LoadModule userdir_module /usr/lib/apache2/modules/mod_userdir.so
+</IfModule>

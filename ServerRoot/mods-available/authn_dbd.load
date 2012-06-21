@@ -1,2 +1,4 @@
 # Depends: dbd
+<IfModule !authn_dbd_module>
 LoadModule authn_dbd_module /usr/lib/apache2/modules/mod_authn_dbd.so
+</IfModule>

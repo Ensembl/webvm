@@ -1,1 +1,3 @@
+<IfModule !authn_dbm_module>
 LoadModule authn_dbm_module /usr/lib/apache2/modules/mod_authn_dbm.so
+</IfModule>

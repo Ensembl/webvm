@@ -1,1 +1,3 @@
+<IfModule !include_module>
 LoadModule include_module /usr/lib/apache2/modules/mod_include.so
+</IfModule>

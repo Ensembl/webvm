@@ -1,1 +1,3 @@
+<IfModule !setenvif_module>
 LoadModule setenvif_module /usr/lib/apache2/modules/mod_setenvif.so
+</IfModule>

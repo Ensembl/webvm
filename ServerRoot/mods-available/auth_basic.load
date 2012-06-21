@@ -1,1 +1,3 @@
+<IfModule !auth_basic_module>
 LoadModule auth_basic_module /usr/lib/apache2/modules/mod_auth_basic.so
+</IfModule>

@@ -1,1 +1,3 @@
+<IfModule !negotiation_module>
 LoadModule negotiation_module /usr/lib/apache2/modules/mod_negotiation.so
+</IfModule>

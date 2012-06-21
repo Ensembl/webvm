@@ -1,1 +1,3 @@
+<IfModule !headers_module>
 LoadModule headers_module /usr/lib/apache2/modules/mod_headers.so
+</IfModule>

@@ -1,1 +1,3 @@
+<IfModule !alias_module>
 LoadModule alias_module /usr/lib/apache2/modules/mod_alias.so
+</IfModule>

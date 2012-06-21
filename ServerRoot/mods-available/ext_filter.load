@@ -1,1 +1,3 @@
+<IfModule !ext_filter_module>
 LoadModule ext_filter_module /usr/lib/apache2/modules/mod_ext_filter.so
+</IfModule>

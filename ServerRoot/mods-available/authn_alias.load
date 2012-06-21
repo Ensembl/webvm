@@ -1,1 +1,3 @@
+<IfModule !authn_alias_module>
 LoadModule authn_alias_module /usr/lib/apache2/modules/mod_authn_alias.so
+</IfModule>
