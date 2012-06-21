@@ -3,11 +3,11 @@
 WEBDIR="$( dirname $( readlink -e $0 ) )"
 # XXX:UBUNTU GNU-ism.
 
-: ${WEBTMPDIR:="$( dirname "$WEBDIR" )/tmp/$( basename "$WEBDIR" )"}
-[ -d "$WEBTMPDIR" ] && [ -w "$WEBTMPDIR" ] || {
-    echo "Abort: Guessed WEBTMPDIR=$WEBTMPDIR incorrectly, please have it created & writable, or override by environment" >&2
-    exit 2
-}
+# This is the Ubuntu default, and is often not on our PATH
+# We need to override it for local installs (no need to export)
+APACHE2=/usr/sbin/apache2
+
+op=${1:-$( basename $0 )}
 
 apache_defines() {
     local tok out
@@ -17,9 +17,19 @@ apache_defines() {
     echo "$out"
 }
 
-export WEBDIR WEBTMPDIR
+[ -f "$WEBDIR/APACHECTL.sh" ] && {
+    echo "[d] source $WEBDIR/APACHECTL.sh"
+    . "$WEBDIR/APACHECTL.sh"
+}
 
-op=${1:-$( basename $0 )}
+: ${WEBTMPDIR:="$( dirname "$WEBDIR" )/tmp/$( basename "$WEBDIR" )"}
+[ -d "$WEBTMPDIR" ] && [ -w "$WEBTMPDIR" ] || {
+    echo "Abort: Guessed WEBTMPDIR=$WEBTMPDIR incorrectly, please have it created & writable, or override by environment" >&2
+    exit 2
+}
+
+# Export these because Apache needs to interpolate them into the config
+export WEBDIR WEBTMPDIR
 
 echo "[d] doing $op for WEBDIR=$WEBDIR WEBTMPDIR=$WEBTMPDIR with" $( apache_defines )
 case $op in
@@ -36,7 +46,7 @@ INFO
         exit 0
         ;;
     start|restart|graceful|graceful-stop|stop) # supported by "apache2 -k"
-        exec /usr/sbin/apache2 \
+        exec $APACHE2 \
 	    $( apache_defines ) \
             -f "$WEBDIR/ServerRoot/conf/httpd.conf" \
             -k $op

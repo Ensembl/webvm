@@ -54,6 +54,23 @@ which is cumbersome, so use
 
 Possible actions/options for that script are likely to change.
 
+** Run with home-installed / local Apache
+You can (p)reset the environment seen by the first call to apache2 by
+writing to the file APACHECTL.sh .  This file is listed in .gitignore,
+is sourced by APACHECTL and does not need to be executable.
+
+This is useful for running with a locally installed Apache2 binary.
+Mine contains
+
+  PATH=/nfs/users/nfs_m/mca/bin:/software/bin:/usr/bin:/bin
+
+  # locks & logs in here; must mkdir it first
+  WEBTMPDIR=/var/tmp/mca.apache2/8002
+  mkdir -p $WEBTMPDIR/logs
+
+  # pass only the necessary environment
+  APACHE2="env -i PATH=$PATH USER=$USER WEBDIR=$WEBDIR WEBTMPDIR=$WEBTMPDIR $HOME/_httpd/i386/bin/httpd"
+
 ** Environment variables
 *** WEBDIR
 WEBDIR points to the git working copy.  It contains your ServerRoot,
