@@ -90,9 +90,10 @@ using and makes for an easy grep token.
 Then I started replacing them with things that work.
 
 *** Fixmes and grubbiness that may be worth improving later
-    git grep -hE '[X]XX:|[B]0RK/' | sed -e 's/^[ #]*//; s/XXX/XX/; s/^/  /' | sort -uf
+    git grep -hE '[X]XX:|[B]0RK/|[T]ODO' | sed -e 's/^[ #]*//; s/XXX/xXX/; s/[T]ODO/tODO/; s/^/  /' | LC_ALL=C sort -uf
 
-  "/ServerRoot_B0RK/cgi-bin" should be changed to whatever your ScriptAliased
+  *** tODO tell CGI scripts when request is internal
+  *** tODO trigger DEVEL mode
   /ServerRoot_B0RK/error/include/ files and copying them to /your/include/path/, 
   <Directory "/ServerRoot_B0RK/cgi-bin">
   <Directory "/ServerRoot_B0RK/error">
@@ -108,7 +109,6 @@ Then I started replacing them with things that work.
   DocumentRoot "/ServerRoot_B0RK/htdocs"
   ErrorLog "/ServerRoot_B0RK/logs/error_log"
   htdigest -c "/ServerRoot_B0RK/user.passwd" DAV-upload admin
-  server as "/ServerRoot_B0RK/logs/foo_log".
   SSLCACertificateFile "/ServerRoot_B0RK/conf/ssl.crt/ca-bundle.crt"
   SSLCACertificatePath "/ServerRoot_B0RK/conf/ssl.crt"
   SSLCARevocationFile "/ServerRoot_B0RK/conf/ssl.crl/ca-bundle.crl"
@@ -122,18 +122,34 @@ Then I started replacing them with things that work.
   SSLSessionCache         "dbm:/ServerRoot_B0RK/logs/ssl_scache"
   SSLSessionCache        "shmcb:/ServerRoot_B0RK/logs/ssl_scache(512000)"
   TransferLog "/ServerRoot_B0RK/logs/access_log"
-  XX:LOCALMOD symlink ServerRoot/logs to user's tmpdir.
+  xXX:UBUNTU GNU-ism.
 
-*** XXX:TODO tell CGI scripts when request is internal
+
+*** TODO tell CGI scripts when request is internal
 Need to check or replace the HTTP_CLIENTREALM mechanism, used by $erverScriptSupport->local_user
 
-*** XXX:TODO trigger DEVEL mode
+*** TODO trigger DEVEL mode
 based on what,
  the hostname?
  (untracked or locally modified) config file?
  being a user not www-anacode?
 
 It may be set manually with WEBDEFS=DEVEL
+
+*** TODO Set MaxClients in conf/extra/httpd-mpm.conf
+jh13 comments "MaxClients 150" to avoid bringing the machine down
+
+*** TODO rescue content from intweb
++ [ ] /nfs/WWWdev/INTWEB_docs/htdocs/Teams/Team71/vertann
++ [ ] /nfs/WWWdev/INTWEB_docs/cgi-bin/users
+  - [ ] jh13
+  - [ ] mca
+  - [ ] jgrg
+  - [ ] ml6
+  - [ ] ck1
+
+*** TODO avoid tripping Bio::Otter::Git up, by deploying via a git repo
++ jh13 would be happy to have B:O:G (caching mechanism?) replaced with something better
 
 ** Git branch structure
 Initial plan...
