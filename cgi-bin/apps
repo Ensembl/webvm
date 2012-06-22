@@ -30,12 +30,18 @@ sub make_page {
             $app{$app} ||= [];
             my $conf = "$appfn/app.conf";
             push @{ $app{$app} }, $conf if -f $conf;
+        } elsif ($appfn =~ m{~$}) {
+            # ignore
         } else {
             push @weird, $appfn;
         }
     }
 
-    push @out, qq{<dl>\n};
+    if (keys %app) {
+        push @out, qq{<h2> Apps present </h2>\n<dl>\n};
+    } else {
+        push @out, "No apps found";
+    }
     foreach my $app (sort keys %app) {
         my @cfg = sort { length($a) <=> length($b) } @{ $app{$app} }; # APPORDER
         push @out, qq{  <dt><a href="/apps/$app">$app</a></dt>\n};
@@ -52,11 +58,10 @@ sub make_page {
         }
         push @out, qq{  </ol></dd>\n} if @cfg;
     }
-    push @out, qq{<dl>\n};
-    push @weird, "No apps found" unless keys %app;
+    push @out, qq{</dl>\n} if keys %app;
 
     push @out,
-      (qq{<ul class="weird">\n},
+      (qq{<h2> Weirdness </h2>\n<ul class="weird">\n},
        (map {qq{<li> Weird: $_</li>\n}} @weird),
        qq{</ul>\n})
         if @weird;
