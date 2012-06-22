@@ -1,4 +1,4 @@
 # Depends: proxy
 <IfModule !proxy_balancer_module>
-LoadModule proxy_balancer_module /usr/lib/apache2/modules/mod_proxy_balancer.so
+LoadModule proxy_balancer_module ${APACHE2_MODS}/mod_proxy_balancer.so
 </IfModule>

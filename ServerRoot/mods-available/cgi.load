@@ -1,3 +1,3 @@
 <IfModule !cgi_module>
-LoadModule cgi_module /usr/lib/apache2/modules/mod_cgi.so
+LoadModule cgi_module ${APACHE2_MODS}/mod_cgi.so
 </IfModule>

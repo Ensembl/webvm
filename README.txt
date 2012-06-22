@@ -55,6 +55,10 @@ which is cumbersome, so use
 Possible actions/options for that script are likely to change.
 
 ** Run with home-installed / local Apache
+You can run with a locally built and installed Apache, provided it
+includes the necessary features.  Note that the default build does not
+include mod_rewrite.
+
 You can (p)reset the environment seen by the first call to apache2 by
 writing to the file APACHECTL.sh .  This file is listed in .gitignore,
 is sourced by APACHECTL and does not need to be executable.
@@ -70,6 +74,16 @@ Mine contains
 
   # pass only the necessary environment
   APACHE2="env -i PATH=$PATH USER=$USER WEBDIR=$WEBDIR WEBTMPDIR=$WEBTMPDIR $HOME/_httpd/i386/bin/httpd"
+
+*** Accumulated wisdom for ./configure of 2.2.x
++ ./configure --prefix=$HOME/_httpd --exec-prefix=$HOME/_httpd/i386 && make && make install
+  - lacks mod_rewrite
+  - putting binaries down a level might allow Mac support, but I didn't use that
+  - mca first "local Apache"
++ ./configure --enable-rewrite --enable-so  --with-mpm=prefork --prefix=$HOME/_httpd/httpd --enable-pie  --enable-mods-shared=most
+  - PIE is for security (location in memory is randomised)
+  - these enable switches may be redundant
+  - attempt to use for webvm
 
 ** Environment variables
 *** WEBDIR

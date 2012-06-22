@@ -3,9 +3,10 @@
 WEBDIR="$( dirname $( readlink -e $0 ) )"
 # XXX:UBUNTU GNU-ism.
 
-# This is the Ubuntu default, and is often not on our PATH
-# We need to override it for local installs (no need to export)
+# These are the Ubuntu defaults.  /usr/sbin is often not on our PATH
+# We need to override for local installs
 APACHE2=/usr/sbin/apache2
+export APACHE2_MODS=/usr/lib/apache2/modules
 
 op=${1:-$( basename $0 )}
 

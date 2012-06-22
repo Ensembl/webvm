@@ -1,3 +1,3 @@
 <IfModule !filter_module>
-LoadModule filter_module /usr/lib/apache2/modules/mod_filter.so
+LoadModule filter_module ${APACHE2_MODS}/mod_filter.so
 </IfModule>

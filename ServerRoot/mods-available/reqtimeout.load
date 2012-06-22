@@ -1,3 +1,3 @@
 <IfModule !reqtimeout_module>
-LoadModule reqtimeout_module /usr/lib/apache2/modules/mod_reqtimeout.so
+LoadModule reqtimeout_module ${APACHE2_MODS}/mod_reqtimeout.so
 </IfModule>

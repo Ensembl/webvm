@@ -1,3 +1,3 @@
 <IfModule !cache_module>
-LoadModule cache_module /usr/lib/apache2/modules/mod_cache.so
+LoadModule cache_module ${APACHE2_MODS}/mod_cache.so
 </IfModule>

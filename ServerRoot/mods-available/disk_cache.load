@@ -1,4 +1,4 @@
 # Depends: cache
 <IfModule !disk_cache_module>
-LoadModule disk_cache_module /usr/lib/apache2/modules/mod_disk_cache.so
+LoadModule disk_cache_module ${APACHE2_MODS}/mod_disk_cache.so
 </IfModule>

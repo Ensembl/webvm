@@ -1,4 +1,4 @@
 # Depends: proxy
 <IfModule !proxy_http_module>
-LoadModule proxy_http_module /usr/lib/apache2/modules/mod_proxy_http.so
+LoadModule proxy_http_module ${APACHE2_MODS}/mod_proxy_http.so
 </IfModule>

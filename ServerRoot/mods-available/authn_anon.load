@@ -1,3 +1,3 @@
 <IfModule !authn_anon_module>
-LoadModule authn_anon_module /usr/lib/apache2/modules/mod_authn_anon.so
+LoadModule authn_anon_module ${APACHE2_MODS}/mod_authn_anon.so
 </IfModule>

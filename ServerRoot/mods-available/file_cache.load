@@ -1,4 +1,4 @@
 # Depends: cache
 <IfModule !file_cache_module>
-LoadModule file_cache_module /usr/lib/apache2/modules/mod_file_cache.so
+LoadModule file_cache_module ${APACHE2_MODS}/mod_file_cache.so
 </IfModule>

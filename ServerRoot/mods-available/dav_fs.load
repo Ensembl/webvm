@@ -1,4 +1,4 @@
 # Depends: dav
 <IfModule !dav_fs_module>
-LoadModule dav_fs_module /usr/lib/apache2/modules/mod_dav_fs.so
+LoadModule dav_fs_module ${APACHE2_MODS}/mod_dav_fs.so
 </IfModule>
