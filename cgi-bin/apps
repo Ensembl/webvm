@@ -4,16 +4,83 @@ use strict;
 use warnings;
 use CGI 'escapeHTML';
 use CGI::Carp 'fatalsToBrowser';
+use LWP;
+use Date::Parse 'str2time';
+use File::Find 'find';
+
 
 sub main {
     print make_page();
     return 0;
 }
 
+sub get_restart_time {
+    my $ua = LWP::UserAgent->new;
+    $ua->timeout(5);
+
+#    my $url = "http://$ENV{SERVER_NAME}:$ENV{SERVER_PORT}/server-status";
+    my $url = "http://localhost:$ENV{SERVER_PORT}/server-status";
+    #
+    # a) will be 404 unless mod_status enabled (DEVEL mode)
+    # b) could block until _our_ caller times out (DEBUG mode)
+    # c) Fetching SERVER_NAME:SERVER_PORT times out even in multi-work mode
+    #
+    # I suspect c) is because we connect in preference to the current
+    # worker listening on our socket, rather than the parent process
+    # which would issue the request to a new worker.
+    #
+    # Using localhost is a workaround for this.  Going via a proxy is
+    # another solution.
+    my $response = $ua->get($url);
+    if ($response->is_success) {
+        my $txt = $response->decoded_content;
+        if (my ($restart) = $txt =~
+            m{<dt>Restart Time: \S+, (\d+-\w+-\d+ [0-9:]{8} \w+)</dt>}) {
+            return str2time($restart);
+        } else {
+            warn "No restart time in $url";
+            return ();
+        }
+    } else {
+        warn "$url fail:".$response->status_line.' (single-threaded in DEBUG mode?)';
+        return ();
+    }
+
+    # Turns out the PidFile is touched on restart.  This would be
+    # handy if we knew where it was (without cheating, which means
+    # consulting /server-info (doh!) or parsing config).
+}
+
+sub newer_than {
+    my ($M, @dir) = @_;
+
+    my $seen = 0;
+    my @keep;
+    my $after = sub { # operating on name $_
+        die "Too many files seen ($_)" if ++$seen > 1000; # arbitrary limit, emergency brake
+        my ($type, $new) = ('', 0);
+        if (-l) {
+            $new = -M _ < $M || -C _ < $M;
+            $type = ' -> '.readlink;
+            stat;
+        } elsif (-d _) {
+            $type = '/';
+        }
+        $new ||= -M _ < $M || -C _ < $M;
+        push @keep, $File::Find::name.$type if $new;
+        return ();
+    };
+    find({ wanted => $after, follow => 0, no_chdir => 1 }, @dir);
+    return @keep;
+}
+
+
 sub make_page {
     my @out;
 
     my $server = "$ENV{SERVER_NAME}:$ENV{SERVER_PORT}";
+    my $restarted = get_restart_time();
+    my $restartM = defined $restarted ? ($^T - $restarted)/86400 : undef;
     $server =~ s{(\.internal)?\.sanger\.ac\.uk}{};
 
     my $webdir = $ENV{DOCUMENT_ROOT};
@@ -25,6 +92,9 @@ sub make_page {
         if (-f $appfn && $appfn =~ m{/([^/]+)\.conf$}) {
             my $app = $1;
             push @{ $app{$app} }, $appfn;
+            if (defined $restarted && (-M $appfn) < $restartM) {
+                push @weird, "Restart needed: $appfn newer than httpd restart";
+            }
         } elsif (-d $appfn) {
             my ($app) = $appfn =~ m{/([^/]+)$};
             $app{$app} ||= [];
@@ -42,6 +112,17 @@ sub make_page {
         } else {
             push @weird, $appfn;
         }
+    }
+
+    if (defined $restarted) {
+        push @out, qq{<h2>Server (re)started</h2>\n}.localtime($restarted);
+        my @newconf = newer_than($restartM, "$webdir/ServerRoot");
+        push @weird, join '',
+          ("Restart needed: ServerRoot files changed since server start <ul>",
+           li(@newconf), '</ul>')
+            if @newconf;
+    } else {
+        push @out, '(need <tt><a href="/server-status">/server-status</a></tt> to get restart time, use <tt>WEBDEFS=DEVEL</tt>)';
     }
 
     if (keys %app) {
@@ -64,9 +145,7 @@ sub make_page {
     push @out, qq{</dl>\n} if keys %app;
 
     push @out,
-      (qq{<h2> Weirdness </h2>\n<ul class="weird">\n},
-       (map {qq{<li> $_</li>\n}} @weird),
-       qq{</ul>\n})
+      (qq{<h2> Weirdness </h2>\n<ul class="weird">\n}, li(@weird), qq{</ul>\n})
         if @weird;
 
     return (<<HDR, @out, <<FTR);
@@ -74,7 +153,7 @@ Content-type: text/html\n
 <html><head>
  <title>Apps on $server</title>
 </head><body>
-<h1> Apps on $server under $webdir</h1>
+<h1> Apps on <a href="/">$server</a> under $webdir</h1>
 HDR
 </body></html>
 FTR
@@ -94,6 +173,11 @@ sub read_file {
     open my $fh, '<', $fn or die "Can't read $fn: $!";
     local $/;
     return <$fh>;
+}
+
+sub li {
+    my @txt = @_;
+    return map {qq{   <li>$_</li>\n}} @txt;
 }
 
 
