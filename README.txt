@@ -121,13 +121,14 @@ Lacking (knowledge of) a standard scheme for putting multiple
 applications on a server in a self-contained way, we push the
 responsibility for configuring url:file mappings onto the webapp.
 
-Apps are expected to be git working copies (or other directories) in
-${WEBDIR}/apps/
-
-Apache config may be supplied in either or both of
-  apps/*.conf
-  apps/*/app.conf
-
+Apps are expected to
++ be a directory ${WEBDIR}/apps/$APPNAME/ (most likely a git working copy)
++ supply Apache config in apps/$APPNAME.conf
+  - this should be derived from the template config
+    "apps/$APPNAME/app.conf", process to be defined
++ accept the namespace given to them as $APPNAME, possibly with some interpretation
++ apps whose files all reside externally can be added by dropping one
+  file, not derived from a template.  The index.conf does this.
 ** Open questions
 *** TODO Do we want host-dependent environment setup?
 As in "source APACHECTL.$(hostname -s).sh"

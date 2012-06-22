@@ -29,7 +29,14 @@ sub make_page {
             my ($app) = $appfn =~ m{/([^/]+)$};
             $app{$app} ||= [];
             my $conf = "$appfn/app.conf";
-            push @{ $app{$app} }, $conf if -f $conf;
+            my $derive = "$webdir/apps/$app.conf";
+            push @weird, "Not present: Expected $derive, to be derived from $conf"
+              unless -f $derive;
+            push @weird, "Not present: Expected $conf in $appfn/"
+              unless -f $conf;
+            if (-f $conf && -f $derive && -M $derive > -M $conf) {
+                push @weird, "Out of date: derived $derive is older than $conf";
+            }
         } elsif ($appfn =~ m{~$}) {
             # ignore
         } else {
@@ -44,25 +51,21 @@ sub make_page {
     }
     foreach my $app (sort keys %app) {
         my @cfg = sort { length($a) <=> length($b) } @{ $app{$app} }; # APPORDER
-        push @out, qq{  <dt><a href="/apps/$app">$app</a></dt>\n};
-        if (@cfg) {
-            push @out, qq{  <dd><ol>\n};
-        } else {
-            push @out, qq{  <dd>No configuration - will not be used </dd>\n};
-        }
+        push @out, qq{  <dt><a href="/apps/$app">$app</a></dt><dd>\n};
+        push @out, qq{  No configuration - will not be used\n} unless @cfg;
         foreach my $cfg (@cfg) {
             my $htxt = escapeHTML(read_file($cfg));
             push @out,
-              (qq{  <li> <p class=fn> $cfg </p>\n},
+              (qq{  <p class=fn> $cfg </p>\n},
                qq{<pre class="conf">$htxt</pre> </li>\n});
         }
-        push @out, qq{  </ol></dd>\n} if @cfg;
+        push @out, qq{  </dd>\n};
     }
     push @out, qq{</dl>\n} if keys %app;
 
     push @out,
       (qq{<h2> Weirdness </h2>\n<ul class="weird">\n},
-       (map {qq{<li> Weird: $_</li>\n}} @weird),
+       (map {qq{<li> $_</li>\n}} @weird),
        qq{</ul>\n})
         if @weird;
 
