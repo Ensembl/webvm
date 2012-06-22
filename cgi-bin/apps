@@ -1,0 +1,92 @@
+#! /usr/bin/perl
+
+use strict;
+use warnings;
+use CGI 'escapeHTML';
+use CGI::Carp 'fatalsToBrowser';
+
+sub main {
+    print make_page();
+    return 0;
+}
+
+sub make_page {
+    my @out;
+
+    my $server = "$ENV{SERVER_NAME}:$ENV{SERVER_PORT}";
+    $server =~ s{(\.internal)?\.sanger\.ac\.uk}{};
+
+    my $webdir = $ENV{DOCUMENT_ROOT};
+    $webdir =~ s{/htdocs/?$}{};
+
+    my @weird;
+    my %app; # key = appname, value = \@cfgs
+    foreach my $appfn (read_dir("$webdir/apps")) {
+        if (-f $appfn && $appfn =~ m{/([^/]+)\.conf$}) {
+            my $app = $1;
+            push @{ $app{$app} }, $appfn;
+        } elsif (-d $appfn) {
+            my ($app) = $appfn =~ m{/([^/]+)$};
+            $app{$app} ||= [];
+            my $conf = "$appfn/app.conf";
+            push @{ $app{$app} }, $conf if -f $conf;
+        } else {
+            push @weird, $appfn;
+        }
+    }
+
+    push @out, qq{<dl>\n};
+    foreach my $app (sort keys %app) {
+        my @cfg = sort { length($a) <=> length($b) } @{ $app{$app} }; # APPORDER
+        push @out, qq{  <dt><a href="/apps/$app">$app</a></dt>\n};
+        if (@cfg) {
+            push @out, qq{  <dd><ol>\n};
+        } else {
+            push @out, qq{  <dd>No configuration - will not be used </dd>\n};
+        }
+        foreach my $cfg (@cfg) {
+            my $htxt = escapeHTML(read_file($cfg));
+            push @out,
+              (qq{  <li> <p class=fn> $cfg </p>\n},
+               qq{<pre class="conf">$htxt</pre> </li>\n});
+        }
+        push @out, qq{  </ol></dd>\n} if @cfg;
+    }
+    push @out, qq{<dl>\n};
+    push @weird, "No apps found" unless keys %app;
+
+    push @out,
+      (qq{<ul class="weird">\n},
+       (map {qq{<li> Weird: $_</li>\n}} @weird),
+       qq{</ul>\n})
+        if @weird;
+
+    return (<<HDR, @out, <<FTR);
+Content-type: text/html\n
+<html><head>
+ <title>Apps on $server</title>
+</head><body>
+<h1> Apps on $server under $webdir</h1>
+HDR
+</body></html>
+FTR
+}
+
+
+sub read_dir {
+    my ($fn) = @_;
+    opendir my $dh, $fn or die "Can't opendir $fn: $!";
+    my @leaf = grep { $_ !~ /^\.\.?$/ } readdir $dh;
+    closedir $dh;
+    return map {qq{$fn/$_}} @leaf;
+}
+
+sub read_file {
+    my ($fn) = @_;
+    open my $fh, '<', $fn or die "Can't read $fn: $!";
+    local $/;
+    return <$fh>;
+}
+
+
+exit main();

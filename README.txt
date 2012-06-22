@@ -93,6 +93,21 @@ Useful options are
 + DEVEL :: enable the server-status & server-info pages.  This comes from our config.
 + DEBUG :: to run a single Apache thread and stop it going into the background.  This is an Apache option.
 
+** Containerised web apps
++ We do not expect to be able to use virtual hosts in this setting.
++ We do not want per-application edits to the main httpd.conf file.
+
+Lacking (knowledge of) a standard scheme for putting multiple
+applications on a server in a self-contained way, we push the
+responsibility for configuring url:file mappings onto the webapp.
+
+Apps are expected to be git working copies (or other directories) in
+${WEBDIR}/apps/
+
+Apache config may be supplied in either or both of
+  apps/*.conf
+  apps/*/app.conf
+
 ** ServerConf/conf/ contents
 *** What is /ServerRoot_B0RK ?
 The Apache build process hardwires various filenames into the config
