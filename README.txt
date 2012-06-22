@@ -26,11 +26,12 @@ If you are root (e.g. install to laptop), use
 
  sudo ./setup.root.sh
 
+ # Provide Apache httpd
  sudo aptitude install apache2-mpm-prefork # Linux
  sudo port -v install apache2 +preforkmpm  # MacPorts - mca's guess
 
-Otherwise you need root to do the equivalent operations, and/or
-install from tarball and set up in your home directory.
+ # or install from tarball, or                # } see branch
+ git clone intcvs1:/repos/git/users/mca/httpd # } mca/deskpro
 
 Note that running on Mac is not (yet) supported and would require
 chasing out the Ubuntu dependencies.  Some of these are marked with
@@ -64,16 +65,7 @@ writing to the file APACHECTL.sh .  This file is listed in .gitignore,
 is sourced by APACHECTL and does not need to be executable.
 
 This is useful for running with a locally installed Apache2 binary.
-Mine contains
-
-  PATH=/nfs/users/nfs_m/mca/bin:/software/bin:/usr/bin:/bin
-
-  # locks & logs in here; must mkdir it first
-  WEBTMPDIR=/var/tmp/mca.apache2/8002
-  mkdir -p $WEBTMPDIR/logs
-
-  # pass only the necessary environment
-  APACHE2="env -i PATH=$PATH USER=$USER WEBDIR=$WEBDIR WEBTMPDIR=$WEBTMPDIR $HOME/_httpd/i386/bin/httpd"
+See branch mca/deskpro for how I do it.
 
 *** Accumulated wisdom for ./configure of 2.2.x
 + ./configure --prefix=$HOME/_httpd --exec-prefix=$HOME/_httpd/i386 && make && make install
@@ -86,19 +78,34 @@ Mine contains
   - attempt to use for webvm
 
 ** Environment variables
+*** APACHE2_MODS
+The path to files for the LoadModule directive.
+Default is for Ubuntu.
 *** WEBDIR
 WEBDIR points to the git working copy.  It contains your ServerRoot,
 htdocs etc..
 
 This variable is built from $0
 *** WEBTMPDIR
-By the web team's convention, host-specific writable files are kept
-separate.  This makes it clear what files should not be copied, when
-cloning a machine.  WEBTMPDIR is that directory.
+By the Web Team's convention, host-specific writable files (including
+logs and lockfiles) are kept separate.  This makes it clear what files
+should not be copied, when cloning a machine.
 
-It defaults to something like /www/tmp/$USER but is derived from
-WEBDIR, unless a value is passed in.
-*** WEBDEFS
+WEBTMPDIR is Anacode's name for that directory.  It defaults to
+something like /www/tmp/$USER , being derived as a niece of WEBDIR.
+An override value may be passed in or set from APACHECTL.sh .
+
+This directory must exist, be writable and stored on local filesystem.
+*** Not exported to httpd
+These variables are used within the APACHECTL script
+**** APACHE2
+The path to the apache2 httpd executable, in the context of the
+prevailing $PATH .  Default is for Ubuntu.
+
+This is word expanded before use, so can also do environment setup.
+**** op
+The operation APACHECTL is about to perform.
+**** WEBDEFS
 WEBDEFS takes comma-separated keywords to pass as "apache2 -D" flags.
 
 It currently defaults to "vanilla", but this may change.
@@ -106,7 +113,6 @@ It currently defaults to "vanilla", but this may change.
 Useful options are
 + DEVEL :: enable the server-status & server-info pages.  This comes from our config.
 + DEBUG :: to run a single Apache thread and stop it going into the background.  This is an Apache option.
-
 ** Containerised web apps
 + We do not expect to be able to use virtual hosts in this setting.
 + We do not want per-application edits to the main httpd.conf file.
@@ -122,6 +128,18 @@ Apache config may be supplied in either or both of
   apps/*.conf
   apps/*/app.conf
 
+** Open questions
+*** TODO Do we want host-dependent environment setup?
+As in "source APACHECTL.$(hostname -s).sh"
+or something more generalised for a class of machines,
+possibly also providing the notion of dev/live
+*** TODO trigger DEVEL mode
+based on what,
+ the hostname?
+ (untracked or locally modified) config file?
+ being a user not www-anacode?
+
+It may be set manually with WEBDEFS=DEVEL
 ** ServerConf/conf/ contents
 *** What is /ServerRoot_B0RK ?
 The Apache build process hardwires various filenames into the config
@@ -170,17 +188,8 @@ Then I started replacing them with things that work.
   TransferLog "/ServerRoot_B0RK/logs/access_log"
   xXX:UBUNTU GNU-ism.
 
-
 *** TODO tell CGI scripts when request is internal
 Need to check or replace the HTTP_CLIENTREALM mechanism, used by $erverScriptSupport->local_user
-
-*** TODO trigger DEVEL mode
-based on what,
- the hostname?
- (untracked or locally modified) config file?
- being a user not www-anacode?
-
-It may be set manually with WEBDEFS=DEVEL
 
 *** TODO Set MaxClients in conf/extra/httpd-mpm.conf
 jh13 comments "MaxClients 150" to avoid bringing the machine down
