@@ -84,6 +84,9 @@ hardwire paths (as the shipped default seems to be).
 *** APACHE2_MODS
 The path to files for the LoadModule directive.
 Default is for Ubuntu.
+*** APACHE2_SHARE
+The path to icons and errors.
+Default is for Ubuntu.
 *** WEBDIR
 WEBDIR points to the git working copy.  It contains your ServerRoot,
 htdocs etc..

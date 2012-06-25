@@ -7,6 +7,7 @@ WEBDIR="$( dirname $( readlink -e $0 ) )"
 # We need to override for local installs
 APACHE2=/usr/sbin/apache2
 export APACHE2_MODS=/usr/lib/apache2/modules
+export APACHE2_SHARE=/usr/share/apache2
 
 op=${1:-$( basename $0 )}
 
