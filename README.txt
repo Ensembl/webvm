@@ -77,7 +77,10 @@ See branch mca/deskpro for how I do it.
   - these enable switches may be redundant
   - attempt to use for webvm
 
-** Environment variables
+** Environment variables for web server
+Apache's configuration files will interpolate ${ENVIRONMENT_VARIABLES}
+like that.  This avoids having to write them with a template to
+hardwire paths (as the shipped default seems to be).
 *** APACHE2_MODS
 The path to files for the LoadModule directive.
 Default is for Ubuntu.
@@ -113,6 +116,127 @@ It currently defaults to "vanilla", but this may change.
 Useful options are
 + DEVEL :: enable the server-status & server-info pages.  This comes from our config.
 + DEBUG :: to run a single Apache thread and stop it going into the background.  This is an Apache option.
+
+** Perl environment for Otter Server
+*** TL;DR
+Our CGI scripts now run under /usr/bin/perl directly
+ http://git.internal.sanger.ac.uk/cgi-bin/gitweb.cgi?p=anacode/ensembl-otter.git;h=3c761714
+
+and take detainted @INC elements from $OTTER_PERL_INC
+ http://git.internal.sanger.ac.uk/cgi-bin/gitweb.cgi?p=anacode/ensembl-otter.git;h=be62b9f1
+
+
+To run "otterlace in local Apache" on a deskpro
++ existing otterlace_cgi_wrap solution continues to work
++ *Note* DBI.pm is not installed for /usr/bin/perl
++ for development, scripts could self-wrap (not implemented)
+**** TODO self-wrap for alternate Perl
+There are now places where this could be inserted
+
+  if (my $want_perl = delete $ENV{OTTER_PERL_EXE}) {
+    my @libs = split ':', delete $ENV{OTTER_PERL_INC} || q{};
+    exec $ENV{OTTER_PERL_EXE}, (map {( -I => $_ )} @libs), -Tw => $0;
+  }
+*** @INC and taint mode
+The main problem is configuring our @INC while also enabling taint
+mode.
+
++ we run root's Perl but we are not root, so we cannot add modules to the existing @INC
++ taint mode means we cannot add too @INC from the environment
++ a wrapper script between httpd and Perl (to run "perl -T -I... $script") works
+  - it adds complexity
+  - there may be a small performance penalty
+  - isn't clean enough to run in production
+  - we don't need to keep it in the long term
++ self-wrapping Perl scripts can do it
+  - Perl starts untainted
+  - use a module to find the libs and "exec $^X -I... -T $0" unless ${^TAINT}
+  - neat but slightly slower (+0.0043s real time)
+  - a chance to forget to run in taint mode
+  - code checkers looking for "#! perl -T" won't see it
+*** Which Perl to run?
+Options for Perl are
+1) /usr/bin/perl (OS Perl)
+2) /software/perl-*/bin/perl .  Not available on web VMs.
+3) /usr/local/bin/perl (may point to OS Perl or /software)
+4) compile or install our own, with attendant libraries.
+
+Until Otter v67 we used /usr/local/bin/perl which points to OS Perl on
+webservers, /software/perl-5.8.8 on deskpro (local Apache) via
+/software/bin/perl symlink.
+
+Options for choosing Perl are
+1) hardwired #! line (one size fits all)
+2) hardwired #! line (script installer overwrites it)
+3) #!/usr/bin/env perl (not compatible with "perl -T")
+4) scripts can self-wrap when they don't like their environment
+
+For production servers we want a hardwired #! for simplicity.
+Development servers can self-wrap when configured to do so.
+*** Environments to support - details
+**** perl on intwebdev & others
+Current (2012-06) live webservers find Otter Server like this.
+
++ scripts have #!/usr/local/bin/perl -Tw
+  - calls /usr/bin/perl which is 5.8.8
++ @INC contains
+  - /etc/perl
+  - /usr/local/lib/perl/5.8.8
+  - /usr/local/share/perl/5.8.8
+  - /usr/lib/perl5
+  - /usr/share/perl5
+  - /usr/lib/perl/5.8
+  - /usr/share/perl/5.8
+  - /usr/local/lib/site_perl
++ script uses SangerPaths to add to @INC
+  - /usr/lib/perl/5.8/SangerPaths.pm takes config from the webteam, of which we use (some of)
+    - core :: /WWW/SHARED_docs/lib/core /WWW/SANGER_docs/perl /WWW/SANGER_docs/bin-offline
+    - bioperl123 :: /WWW/SHARED_docs/lib/bioperl-1.2.3
+    - ensembl65  :: /WWW/SHARED_docs/lib/ensembl-branch-65/ensembl-draw/modules /WWW/SHARED_docs/lib/ensembl-branch-65/ensembl-variation/modules /WWW/SHARED_docs/lib/ensembl-branch-65/ensembl-compara/modules /WWW/SHARED_docs/lib/ensembl-branch-65/modules /WWW/SHARED_docs/lib/ensembl-branch-65/ensembl-external/modules /WWW/SHARED_docs/lib/ensembl-branch-65/ensembl/modules /WWW/SHARED_docs/lib/ensembl-branch-65/ensembl-pipeline/modules /WWW/SHARED_docs/lib/ensembl-branch-65/ensembl-webcode/modules /WWW/SHARED_docs/lib/ensembl-branch-65/ensembl-functgenomics/modules
+    - otter$N :: /WWW/SANGER_docs/lib/otter/$N
+  - root put that there, we don't (in general) have that option
+**** Otter Server on local Apache (2011 vintage)
+In order to run existing code on local Apache, we did (in pseudo-code
+and omitting error handling etc.) this,
+
++ httpd.conf uses
+  - SetEnv to supply OTTERLACE_SERVER_ROOT and proxy settings
+  - ScriptAliasMatch to send requests through team_tools/otterlace/server/cgi-bin/cgi_wrap
++ cgi_wrap
+  - inspects $REQUEST_URI
+  - locates the real CGI script under configured $OTTERLACE_SERVER_ROOT
+  - runs team_tools/otterlace/server/bin/otterlace_cgi_wrap
++ otterlace_cgi_wrap
+  - locates team_tools/otterlace/server/perl/
+  - adds that and /software/anacode/lib{/site_perl} to @INC using "perl -I"
+  - runs the real CGI script under "perl -T"
++ team_tools/otterlace/server/perl/ contains "fake" modules
+  - SangerPaths.pm ::
+    - provides requested libraries, from the subset we need
+    - patch up %ENV to meet expectations of Bio::Otter::ServerScriptSupport
+    - pass $OTTERLACE_ERROR_WRAPPING_ENABLED to B:O:SSS
+  - SangerWeb.pm :: provides the minimum we need, with "always enabled" authentication
+**** web-ottersand01
+The environment is more restrictive,
+
++ /software does not exist in production
++ /usr/local/bin/perl points to /software/bin/perl (does not exist)
++ /usr/bin/perl is Ubuntu OS Perl, 5.10.1
++ vanilla @INC is
+  - /etc/perl
+  - /usr/local/lib/perl/5.10.1
+  - /usr/local/share/perl/5.10.1
+  - /usr/lib/perl5
+  - /usr/share/perl5
+  - /usr/lib/perl/5.10
+  - /usr/share/perl/5.10
+  - /usr/local/lib/site_perl
+  - .
++ tainting @INC is the same without ./
+
+Unlike the deskpro /usr/bin/perl, this one includes a full set of DBI
+modules.
+
 ** Containerised web apps
 + We do not expect to be able to use virtual hosts in this setting.
 + We do not want per-application edits to the main httpd.conf file.
