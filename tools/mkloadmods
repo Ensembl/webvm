@@ -1,0 +1,44 @@
+#! /bin/sh
+
+
+mod_file2name() {
+    perl -ne "
+ next unless s/\.$extn\$//;
+
+ if (/php5|dumpio/) {
+   # we know these are broken
+   warn qq{[w] Cannot handle \$_};
+   next;
+ }
+
+ print if s/^mod_(\S+)\$/\$1/;
+"
+}
+
+modfiles="$( ls $APACHE2_MODS | grep -vE '\.(exp|a|la)' )"
+extn="$( echo "$modfiles" | head -n1 | sed -e 's/.*\.//' )"
+modnames="$( echo "$modfiles" | mod_file2name )"
+
+# This template needs special cases for libphp5.so, mod_dumpio.so and
+# maybe others - naming is not regular!
+#
+# It cannot predict dependencies, which are marked in some files.
+
+echo "[i] Checking for each of:" $modnames >&2
+for mod in $modnames; do
+    loadfn=$WEBDIR/ServerRoot/mods-available/$mod.load
+    if ! [ -f "$loadfn" ]; then
+        printf \
+        '# Made by mkloadmods
+<IfModule !%s_module>
+LoadModule %s_module ${APACHE2_MODS}/%s.%s
+</IfModule>\n' $mod $mod mod_$mod $extn > $loadfn
+        ln -s ../mods-available/$mod.load $WEBDIR/ServerRoot/mods-enabled/
+        echo "[w] Enabled $loadfn but don't know if it is right" >&2
+    fi
+done
+
+[ -z "$modnames" ] && {
+    echo '[E] found no modules names - something wrong' >&2
+    exit 4
+}
