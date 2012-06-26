@@ -57,7 +57,19 @@ Possible actions/options for that script are likely to change.
 
 The easiest way to add new operations (which need to share config) is
 to put them in tools/ .
-** Run with home-installed / local Apache
+** Which httpd?
+*** Ubuntu Lucid
+Use of /usr/sbin/apache2 is the default, to match the production web
+servers.
+*** Reasons to share httpd builds
++ Builds take time, and we can reuse them portably (per arch)
++ Configuration has many options, and the defaults are wrong
++ making the LoadModule directives match
+  - modules come from the build, as defined by ./configure
+  - LoadModule directives come with webvm.git
+  - keeping them in sync is messy, but try "./APACHECTL checkmods"
++ So Macs & deskpros can have matching httpd
+*** Run with home-installed / local Apache
 You can run with a locally built and installed Apache, provided it
 includes the necessary features.  Note that the default build does not
 include mod_rewrite.
@@ -69,7 +81,8 @@ is sourced by APACHECTL and does not need to be executable.
 This is useful for running with a locally installed Apache2 binary.
 See branch mca/deskpro for how I do it.
 
-*** Accumulated wisdom for ./configure of 2.2.x
+**** Accumulated wisdom for ./configure of 2.2.x
+Configurations used in the past,
 + ./configure --prefix=$HOME/_httpd --exec-prefix=$HOME/_httpd/i386 && make && make install
   - lacks mod_rewrite
   - putting binaries down a level might allow Mac support, but I didn't use that
@@ -78,7 +91,6 @@ See branch mca/deskpro for how I do it.
   - PIE is for security (location in memory is randomised)
   - these enable switches may be redundant
   - attempt to use for webvm
-
 ** Environment variables for web server
 Apache's configuration files will interpolate ${ENVIRONMENT_VARIABLES}
 like that.  This avoids having to write them with a template to
