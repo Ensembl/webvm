@@ -9,7 +9,11 @@ APACHE2=/usr/sbin/apache2
 export APACHE2_MODS=/usr/lib/apache2/modules
 export APACHE2_SHARE=/usr/share/apache2
 
-op=${1:-$( basename $0 )}
+op=$( basename $0 )
+if [ "$op" = 'APACHECTL' ]; then
+    op=$1
+    shift
+fi
 
 apache_defines() {
     local tok out
@@ -35,12 +39,15 @@ export WEBDIR WEBTMPDIR
 
 echo "[d] doing $op for WEBDIR=$WEBDIR WEBTMPDIR=$WEBTMPDIR with" $( apache_defines )
 case $op in
-    -h | --help)
+    '' | -h | --help)
         cat <<INFO
-Syntax: APACHECTL < start | restart | graceful | graceful-stop | stop >
-    or  run via a symlink with one of these names
+Syntax: APACHECTL < \$operation > [args]*
+    or  run via a symlink, named for an operation
 
-More options later.
+Operations delegated to the Apache2 httpd are
+ start | restart | graceful | graceful-stop | stop
+
+Other operations are names of executables in $WEBDIR/tools/
 
 Environment variables affecting the run are documented in README.txt
 
@@ -48,14 +55,19 @@ INFO
         exit 0
         ;;
     start|restart|graceful|graceful-stop|stop) # supported by "apache2 -k"
+        [ $# = 0 ] || echo "[w] $# extra argument(s) ignored" >&2
         exec $APACHE2 \
 	    $( apache_defines ) \
             -f "$WEBDIR/ServerRoot/conf/httpd.conf" \
             -k $op
         ;;
     *)
-        echo "Cannot comprehend op=$op" >&2
-        exit 1
+        if [ -f "$WEBDIR/tools/$op" ] && [ -x "$WEBDIR/tools/$op" ]; then
+            $WEBDIR/tools/$op "$@"
+        else
+            echo "Cannot comprehend op=$op" >&2
+            exit 1
+        fi
         ;;
 esac
 

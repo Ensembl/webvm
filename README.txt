@@ -55,6 +55,8 @@ which is cumbersome, so use
 
 Possible actions/options for that script are likely to change.
 
+The easiest way to add new operations (which need to share config) is
+to put them in tools/ .
 ** Run with home-installed / local Apache
 You can run with a locally built and installed Apache, provided it
 includes the necessary features.  Note that the default build does not
