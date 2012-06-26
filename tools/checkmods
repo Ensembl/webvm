@@ -1,0 +1,20 @@
+#! /bin/sh
+
+
+set -e
+LC_ALL=C
+DIR="$( mktemp -d --tmpdir webvm-checkmods.XXXXXX )"
+
+trap "rm -f $DIR/present $DIR/listed_available; rmdir $DIR" EXIT
+cd $DIR
+
+perl -ne 'print "$1\n" if m{^\s*LoadModule\s.*/(\S+\.(?:so|dylib))$}' \
+    $WEBDIR/ServerRoot/mods-available/*.load | sort \
+    > listed_available
+
+ls $APACHE2_MODS | grep -vE '\.(exp|a|la)' | sort \
+    > present
+
+set +e
+
+diff -u present listed_available

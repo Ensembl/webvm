@@ -48,6 +48,7 @@ Operations delegated to the Apache2 httpd are
  start | restart | graceful | graceful-stop | stop
 
 Other operations are names of executables in $WEBDIR/tools/
+ checkmods     Compare available loadable modules against ServerRoot/mods-available/
 
 Environment variables affecting the run are documented in README.txt
 
