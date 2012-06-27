@@ -31,7 +31,7 @@ If you are root (e.g. install to laptop), use
  sudo port -v install apache2 +preforkmpm  # MacPorts - mca's guess
 
  # or install from tarball, or                # } see branch
- git clone intcvs1:/repos/git/users/mca/httpd # } mca/deskpro
+ git clone intcvs1:/repos/git/anacode/httpd   # } mca/deskpro
 
 Note that running on Mac is not (yet) supported and would require
 chasing out the Ubuntu dependencies.  Some of these are marked with
@@ -39,8 +39,6 @@ chasing out the Ubuntu dependencies.  Some of these are marked with
 
 
 Then you
-  # repo override only needed until it moves to team area
-  WEBVM=intcvs1:/repos/git/users/mca/webvm.git \
   ./setup.user.sh
 
 *** What should it do?
