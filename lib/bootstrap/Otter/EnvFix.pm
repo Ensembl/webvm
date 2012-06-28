@@ -28,6 +28,7 @@ jh13@sanger.ac.uk
 sub import {
     my ($otterlace_server_root) = # NB: untainted by pattern match
       ($ENV{OTTERLACE_SERVER_ROOT}||'') =~ m(\A(.*?)/?$);
+    # XXX:DUP Otter::Paths
 
     die sprintf "cannot guess OTTERLACE_SERVER_ROOT from script path '%s'", $0
       unless defined $otterlace_server_root;
