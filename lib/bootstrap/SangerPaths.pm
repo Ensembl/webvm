@@ -5,31 +5,14 @@ use strict;
 use warnings;
 
 use Otter::PerlVersion;
+use Otter::EnvFix;
+
 
 my $ensembl_root =
     "/nfs/WWWdev/SHARED_docs/lib/ensembl-branch-";
 
-my ($otterlace_server_root) = # NB: untainted by the pattern match, first one wins
-  (($ENV{OTTERLACE_SERVER_ROOT}||'') =~ m(\A(.*?)/?$),
-   $0 =~ m(\A(.*)/cgi-bin/));
-
-die sprintf "cannot guess OTTERLACE_SERVER_ROOT from script path '%s'", $0
-  unless defined $otterlace_server_root;
-
 my $otter_root =
     "${otterlace_server_root}/lib/otter";
-
-# patch the environment to prevent ServerScriptSupport.pm throwing an
-# error when running from the command line
-$ENV{DOCUMENT_ROOT} = "${otterlace_server_root}/htdocs";
-$ENV{HTTP_CLIENTREALM} = 'sanger'; # emulate a local user
-
-# set error-wrapping
-$Bio::Otter::ServerScriptSupport::ERROR_WRAPPING_ENABLED =
-    $ENV{OTTERLACE_ERROR_WRAPPING_ENABLED} ? 1 : 0;
-
-# disable compression
-$Bio::Otter::ServerScriptSupport::COMPRESSION_ENABLED = 0;
 
 sub import {
     my ( $package, @tags ) = @_;
@@ -64,7 +47,8 @@ sub import {
       ), ),
     ;
 
-    unshift @INC, sprintf('%s/lib/humpub', $otterlace_server_root) if $humpub;
+#    unshift @INC, sprintf('%s/lib/humpub', $otterlace_server_root)
+    die "humpub no longer provided" if $humpub;
 
     return;
 }
