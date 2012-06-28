@@ -71,7 +71,7 @@ sub ensembl {
 #  ensembl-variation/modules
 #    };
 #
-# Webteam SangerPaths (old webservers) did this.
+# Webteam SangerPaths (old webservers) supplied these,
 # If we cut some out, we might also drop them from webvm-deps.git
       qw{
   ensembl-draw/modules
@@ -80,8 +80,6 @@ sub ensembl {
   modules
   ensembl-external/modules
   ensembl/modules
-  ensembl-pipeline/modules
-  ensembl-webcode/modules
   ensembl-functgenomics/modules
     };
 
