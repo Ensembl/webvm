@@ -11,7 +11,7 @@ sub import {
 
     my @lib;
     foreach my $tag (@tags) {
-        if (my ($what, $vsn) = $tag =~ m{^(ensembl|otter)(\d+)$}) {
+        if (my ($what, $vsn) = $tag =~ m{^(bioperl|ensembl|otter|humpub)(\d+|)$}) {
             push @lib, $package->$what($vsn);
         } else {
             warn "Failed to supply '$tag'";
@@ -34,6 +34,41 @@ sub webdir {
     die 'Cannot derive $WEBDIR from '.__FILE__;
 }
 
+sub localdeps {
+    return webdir().'/apps/webvm-deps';
+}
+
+
+sub _wantdir {
+    my ($what, @dirs) = @_;
+    foreach my $dir (@dirs) {
+        return $dir if -d $dir;
+    }
+    die "Cannot find $what.  Looked for @dirs";
+}
+
+
+sub bioperl {
+    my ($pkg, $vsn_short) = @_;
+
+    my %known_vsn =
+      (123 => '1.2.3',
+      );
+
+    my $version = $known_vsn{$vsn_short} || $vsn_short;
+    my @deps =
+      (localdeps(),
+       '/nfs/WWWdev/SHARED_docs/lib',
+       '/nfs/WWW/SHARED_docs/lib');
+
+    my $bioperl = _wantdir
+      ("Bioperl $vsn_short ($version)",
+       map { "$_/bioperl-$version" } @deps);
+
+    die "bioperl$vsn_short is incomplete" unless -d "$bioperl/Bio";
+    return $bioperl;
+}
+
 
 sub otter {
     my ($pkg, $otter_version) = @_;
@@ -51,17 +86,13 @@ sub ensembl {
     my ($pkg, $ensembl_version) = @_;
 
     my @deps =
-      (webdir().'/apps/webvm-deps', # our local copy
+      (localdeps(), # our local copy
        '/nfs/WWWdev/SHARED_docs/lib', # webteam central, seen from deskpro
        '/nfs/WWW/SHARED_docs/lib'); # webteam central, seen from old webserver
 
-    my $ensembl_root;
-    foreach my $dir (@deps) {
-        $ensembl_root = "$dir/ensembl-branch-$ensembl_version";
-        last if -d $ensembl_root;
-    }
-    die "Cannot find Ensembl v$ensembl_version.  Looked in @deps"
-      unless $ensembl_root;
+    my $ensembl_root = _wantdir
+      ("Ensembl v$ensembl_version",
+       map { "$_/ensembl-branch-$ensembl_version" } @deps);
 
     my @lib = map { "$ensembl_root/$_" }
 # team_tools cgi_wrap (local Apache wrapper) did this
@@ -89,5 +120,22 @@ sub ensembl {
     return @lib;
 }
 
+
+# humpub is only used by the Otter Server during scripts/apache/test
+# when we try to load everything (including client libraries)
+sub humpub {
+    my ($pkg, $humpub_version) = @_;
+    die "humpub not yet versioned" if $humpub_version ne '';
+
+    my $humpub = _wantdir
+      ("humpub modules",
+       localdeps().'/humpub', # our local copy
+       '/nfs/WWWdev/SANGER_docs/lib/humpub',
+       '/nfs/WWW/SANGER_docs/lib/humpub');
+
+    die "humpub is incomplete" unless -d "$humpub/Hum";
+
+    return $humpub;
+}
 
 1;
