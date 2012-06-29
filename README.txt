@@ -134,24 +134,26 @@ Useful options are
 
 ** Perl environment for Otter Server
 *** TL;DR
-Our CGI scripts now run under /usr/bin/perl directly
- http://git.internal.sanger.ac.uk/cgi-bin/gitweb.cgi?p=anacode/ensembl-otter.git;h=3c761714
-
-and take detainted @INC elements from $OTTER_PERL_INC
- http://git.internal.sanger.ac.uk/cgi-bin/gitweb.cgi?p=anacode/ensembl-otter.git;h=be62b9f1
-
-
-To run "otterlace in local Apache" on a deskpro
-+ existing otterlace_cgi_wrap solution continues to work
-+ *Note* DBI.pm is not installed for /usr/bin/perl
-+ for development, scripts could self-wrap (not implemented)
-**** TODO self-wrap for alternate Perl
-There are now places where this could be inserted
-
-  if (my $want_perl = delete $ENV{OTTER_PERL_EXE}) {
-    my @libs = split ':', delete $ENV{OTTER_PERL_INC} || q{};
-    exec $ENV{OTTER_PERL_EXE}, (map {( -I => $_ )} @libs), -Tw => $0;
-  }
++ Our CGI scripts now take detainted @INC elements from $OTTER_PERL_INC
+  - http://git.internal.sanger.ac.uk/cgi-bin/gitweb.cgi?p=anacode/ensembl-otter.git;h=be62b9f1
+  - webvm.git/lib/bootstrap/ contains minimal initialisation code
++ They under /usr/bin/perl directly
+  - http://git.internal.sanger.ac.uk/cgi-bin/gitweb.cgi?p=anacode/ensembl-otter.git;h=3c761714
+  - this generally gives us 5.10.1 but could change with OS upgrade
++ Configure to override the shebang Perl for development on deskpros
+  (where /usr/bin/perl has no DBI.pm, or you )
+  - OTTER_PERL_EXE=/software/bin/perl-5.12.2
+  - http://git.internal.sanger.ac.uk/cgi-bin/gitweb.cgi?p=anacode/webvm.git;h=82d8a3a0
+  - First developed near the cgi_wrap code,
+    http://git.internal.sanger.ac.uk/cgi-bin/gitweb.cgi?p=anacode/team_tools.git;a=history;f=otterlace/server/perl/SangerPaths.pm;hb=647b3fcf
++ webvm-deps.git contains Ensembl API etc. which were previously
+  provided by the web team.
+  - beware, this repository contains large commits which can break
+    gitk's display of patches
+  - Otter::Paths expects it to be provided as $WEBDIR/apps/webvm-deps/
+    but will also accept the webteam supplied copies
++ Existing "otterlace in local Apache on a deskpro" with
+  otterlace_cgi_wrap continues to work, but is superseded
 *** @INC and taint mode
 The main problem is configuring our @INC while also enabling taint
 mode.
