@@ -4,7 +4,6 @@ use strict;
 use warnings;
 
 use Otter::PerlVersion;
-use Otter::EnvFix;
 
 require Otter::Paths;
 

@@ -4,6 +4,8 @@ package SangerWeb;
 use strict;
 use warnings;
 
+use Otter::EnvFix;
+
 my $username = (getpwuid($<))[0];
 
 sub new {
