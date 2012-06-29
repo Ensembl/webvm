@@ -6,6 +6,25 @@ use warnings;
 require lib;
 
 
+=head1 NAME
+
+Otter::Paths - add elements to @INC by tag name
+
+=head1 DESCRIPTION
+
+This has evolved during the separation from L<SangerPaths>, which is
+based on L<Module::PortablePath>.
+
+It is small, stand-alone and intended to be installed as part of the
+webserver configuration.
+
+=head1 AUTHOR
+
+mca@sanger.ac.uk
+
+=cut
+
+
 sub import {
     my ( $package, @tags ) = @_;
 
@@ -30,8 +49,11 @@ sub import {
 # Get it from our location, since we are part of that.
 # We could instead take a PassEnv from Apache.
 sub webdir {
-    return $1 if __FILE__ =~ m{^(.*)/lib/bootstrap/Otter/Paths\.pm$};
-    die 'Cannot derive $WEBDIR from '.__FILE__;
+    if (__FILE__ =~ m{^(.*)/lib/bootstrap/Otter/Paths\.pm$}) {
+        return $1;
+    } else {
+        die 'Cannot derive $WEBDIR from '.__FILE__;
+    }
 }
 
 sub localdeps {
