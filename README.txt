@@ -207,7 +207,7 @@ Current (2012-06) live webservers find Otter Server like this.
   - /usr/local/lib/site_perl
 + script uses SangerPaths to add to @INC
   - /usr/lib/perl/5.8/SangerPaths.pm takes config from the webteam, of which we use (some of)
-    - core :: /WWW/SHARED_docs/lib/core /WWW/SANGER_docs/perl /WWW/SANGER_docs/bin-offline
+    - core :: /WWW/SHARED_docs/lib/core /WWW/SANGER_docs/perl /WWW/SANGER_docs/bin-offline (plus /usr/local/oracle/lib)
     - bioperl123 :: /WWW/SHARED_docs/lib/bioperl-1.2.3
     - ensembl65  :: /WWW/SHARED_docs/lib/ensembl-branch-65/ensembl-draw/modules /WWW/SHARED_docs/lib/ensembl-branch-65/ensembl-variation/modules /WWW/SHARED_docs/lib/ensembl-branch-65/ensembl-compara/modules /WWW/SHARED_docs/lib/ensembl-branch-65/modules /WWW/SHARED_docs/lib/ensembl-branch-65/ensembl-external/modules /WWW/SHARED_docs/lib/ensembl-branch-65/ensembl/modules /WWW/SHARED_docs/lib/ensembl-branch-65/ensembl-pipeline/modules /WWW/SHARED_docs/lib/ensembl-branch-65/ensembl-webcode/modules /WWW/SHARED_docs/lib/ensembl-branch-65/ensembl-functgenomics/modules
     - otter$N :: /WWW/SANGER_docs/lib/otter/$N

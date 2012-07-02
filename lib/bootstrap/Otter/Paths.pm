@@ -30,7 +30,7 @@ sub import {
 
     my @lib;
     foreach my $tag (@tags) {
-        if (my ($what, $vsn) = $tag =~ m{^(bioperl|ensembl|otter|humpub)(\d+|)$}) {
+        if (my ($what, $vsn) = $tag =~ m{^(bioperl|core|ensembl|otter|humpub)(\d+|)$}) {
             push @lib, $package->$what($vsn);
         } else {
             warn "Failed to supply '$tag'";
@@ -67,6 +67,36 @@ sub _wantdir {
         return $dir if -d $dir;
     }
     die "Cannot find $what.  Looked for @dirs";
+}
+
+
+sub core {
+    my ($pkg, undef) = @_; # takes no version
+
+    my $SHARED_core = _wantdir
+      ('.../SHARED_docs/lib/core',
+       localdeps().'/SHARED.core',
+       '/nfs/WWWdev/SHARED_docs/lib/core',
+       '/nfs/WWW/SHARED_docs/lib/core');
+
+# real SangerPaths qw(core) provides all of
+#    a) /WWW/SHARED_docs/lib/core
+#    b) /WWW/SANGER_docs/perl
+#    c) /WWW/SANGER_docs/bin-offline
+#    d) /usr/local/oracle/lib onto LD_LIBRARY_PATH
+#
+# this code provides
+#    a) copy of
+#
+# and ignores
+#    b) contains modules we are not interested in (Pfetch.pm)
+#       or actively do not want (SangerPaths.pm)
+#    c) not relevant to Otter Server
+#    d) not required
+
+    die "SHARED.core is incomplete" unless -d "$SHARED_core/Website/SSO";
+
+    return $SHARED_core;
 }
 
 
