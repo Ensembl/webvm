@@ -96,6 +96,24 @@ sub core {
 
     die "SHARED.core is incomplete" unless -d "$SHARED_core/Website/SSO";
 
+
+    # These modules won't load unless we provide some larger
+    # dependencies.  We don't need them, just authentication...  but
+    # these are pulled into SangerWeb.
+    #
+    # Nobble them here - horrible, but better than carrying a diff on
+    # SiteDecor.pm (which already carries an in-copy diff to its CVS
+    # repo)
+    my @cant_mods = qw{
+ SiteDecor/ccc.pm
+ Website/portlet/getblast.pm
+ Website/portlet/news.pm
+ Website/portlet/calendar.pm
+ Website/portlet/special.pm
+       };
+    @INC{@cant_mods} = ("(prevented by $pkg)") x @cant_mods;
+
+
     return $SHARED_core;
 }
 
