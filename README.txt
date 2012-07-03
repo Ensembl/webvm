@@ -297,6 +297,18 @@ based on what,
  being a user not www-anacode?
 
 It may be set manually with WEBDEFS=DEVEL
+
+The mca/deskpro branch sets it in the hooked environment setup.
+*** TODO How do we get HTTP_CLIENTREALM set?                        :webteam:
+It seems to be passed down from the ZXTM front end proxy, as the
+Clientrealm: HTTP header.
+
+SangerWeb.pm (& related) expect it, as does B:O:SSS
+
+What are the possible values and what do they mean?
+
+To what should this be set, when absent?  Presumably a direct
+(non-zxtm) connection is from inside?
 ** ServerConf/conf/ contents
 *** What is /ServerRoot_B0RK ?
 The Apache build process hardwires various filenames into the config
@@ -344,9 +356,6 @@ Then I started replacing them with things that work.
   SSLSessionCache        "shmcb:/ServerRoot_B0RK/logs/ssl_scache(512000)"
   TransferLog "/ServerRoot_B0RK/logs/access_log"
   xXX:UBUNTU GNU-ism.
-
-*** TODO tell CGI scripts when request is internal
-Need to check or replace the HTTP_CLIENTREALM mechanism, used by $erverScriptSupport->local_user
 
 *** TODO Set MaxClients in conf/extra/httpd-mpm.conf
 jh13 comments "MaxClients 150" to avoid bringing the machine down
