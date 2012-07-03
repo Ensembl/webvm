@@ -30,10 +30,10 @@ sub import {
 
     my @lib;
     foreach my $tag (@tags) {
-        if (my ($what, $vsn) = $tag =~ m{^(bioperl|core|ensembl|otter|humpub)(\d+|)$}) {
+        if (my ($what, $vsn) = $tag =~ m{^(bioperl|core|ensembl|humpub|intweb|otter)(\d+|)$}) {
             push @lib, $package->$what($vsn);
         } else {
-            warn "Failed to supply '$tag'";
+            die "Failed to supply '$tag'";
         }
     }
 
@@ -69,6 +69,12 @@ sub _wantdir {
     die "Cannot find $what.  Looked for @dirs";
 }
 
+
+sub intweb {
+    # no-op: intweb is a subset of core which we don't provide
+    # Catching this allows other tags to be fatal
+    return ();
+}
 
 sub core {
     my ($pkg, undef) = @_; # takes no version
