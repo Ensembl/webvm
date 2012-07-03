@@ -5,8 +5,19 @@ Heading levels are indicated by lines =~ m{^\*+}
 
 * Documentation
 ** What is this config?
-This is Apache2 configuration for Anacode web virtual machines.
-It aims to serve dev & live use for anyone in the team.
+This project contains an Apache2 configuration suitable for dev (on
+deskpro or laptop) and live use (on virtual machine), including
++ an httpd.conf laced with "Include"s and ${ENVIRONMENT_VARIABLE} substitutions
++ supporting shell script
++ Perl libraries to bootstrap the provision of APIs needed by the Otter Server
++ Perl libraries to support internal development
+
+Other components it does not contain but can bring in are
++ the httpd, by default from an Ubuntu package
++ larger Perl libraries (webvm-deps.git)
+  - WTSI Single Sign On
+  - Ensembl
+  - BioPerl
 
 Further notes are at
   http://mediawiki.internal.sanger.ac.uk/wiki/index.php/Anacode:_Web_VMs
@@ -26,21 +37,25 @@ If you are root (e.g. install to laptop), use
 
  sudo ./setup.root.sh
 
- # Provide Apache httpd
+ # Provide Apache httpd from OS (optional)
  sudo aptitude install apache2-mpm-prefork # Linux
  sudo port -v install apache2 +preforkmpm  # MacPorts - mca's guess
 
- # or install from tarball, or                # } see branch
- git clone intcvs1:/repos/git/anacode/httpd   # } mca/deskpro
 
+Then install the config and (large!) Perl libraries
+  ./setup.user.sh
+  # this script could use some polish, but I don't expect to use it often
+
+
+(Optional) build httpd from tarball
+  cd $WEBDIR
+  rm -rf httpd
+  ln -s ~/my-httpd/ httpd
+  # or otherwise make available
+**** Running under MacOS X
 Note that running on Mac is not (yet) supported and would require
 chasing out the Ubuntu dependencies.  Some of these are marked with
 [X]XX:UBUNTU.
-
-
-Then you
-  ./setup.user.sh
-
 *** What should it do?
 Run for anyone, independent of location, like this
 
@@ -137,7 +152,7 @@ Useful options are
 + Our CGI scripts now take detainted @INC elements from $OTTER_PERL_INC
   - http://git.internal.sanger.ac.uk/cgi-bin/gitweb.cgi?p=anacode/ensembl-otter.git;h=be62b9f1
   - webvm.git/lib/bootstrap/ contains minimal initialisation code
-+ They under /usr/bin/perl directly
++ They run under /usr/bin/perl directly
   - http://git.internal.sanger.ac.uk/cgi-bin/gitweb.cgi?p=anacode/ensembl-otter.git;h=3c761714
   - this generally gives us 5.10.1 but could change with OS upgrade
 + Configure to override the shebang Perl for development on deskpros

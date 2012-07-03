@@ -7,14 +7,22 @@
 
 
 # Takes an environmental override
-: ${WEBROOT:=/www}
+: ${WEBDIR:=/www}
 
 
 case "$SUDO_USER::$1" in
     :: | ::-h | ::--help | *::-h | *::--help)
 	echo "Syntax: $0 [ <username> ]
 
-Username can be detected from sudo(8), else must be specified." >&2
+This does
+  mkdir -p \$WEBDIR/{tmp/,}\$USERNAME
+  chown ...
+
+Username can be detected from sudo(8), else must be specified.
+
+\$WEBDIR is $WEBDIR but may be overridden by setting the environment
+variable.
+" >&2
 	exit 1
 	;;
     *::)
@@ -27,14 +35,14 @@ esac
 
 if [ "$USER" != 'root' ]; then
     echo "[w] Looks like you are running as $USER"
-    echo "    $0 needs to be root unless you can write $WEBROOT"
+    echo "    $0 needs to be root unless you can write $WEBDIR"
 fi >&2
 
-if [ -e "$WEBROOT/$FOR_USER" ]; then
-    echo "Abort: $WEBROOT/$FOR_USER exists" >&2
+if [ -e "$WEBDIR/$FOR_USER" ]; then
+    echo "Abort: $WEBDIR/$FOR_USER exists" >&2
     exit 2
 fi
 
-echo "Making userspace in $WEBROOT/$FOR_USER" >&2
-mkdir -p "$WEBROOT" "$WEBROOT/$FOR_USER" "$WEBROOT/tmp/$FOR_USER"
-chown $FOR_USER:$FOR_USER "$WEBROOT/$FOR_USER" "$WEBROOT/tmp/$FOR_USER"
+echo "Making userspace in $WEBDIR/$FOR_USER" >&2
+mkdir -p "$WEBDIR" "$WEBDIR/$FOR_USER" "$WEBDIR/tmp/$FOR_USER"
+chown $FOR_USER:$FOR_USER "$WEBDIR/$FOR_USER" "$WEBDIR/tmp/$FOR_USER"
