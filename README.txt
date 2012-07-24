@@ -309,6 +309,11 @@ What are the possible values and what do they mean?
 
 To what should this be set, when absent?  Presumably a direct
 (non-zxtm) connection is from inside?
+
+On developers' apache configs, for now, HTTP_CLIENTREALM should be set
+by hand in apps/DEVEL_OTTER.conf. E.g.:
+    SetEnv HTTP_CLIENTREALM sanger,bogus_from_DEVEL_otter_conf
+
 ** ServerConf/conf/ contents
 *** What is /ServerRoot_B0RK ?
 The Apache build process hardwires various filenames into the config
