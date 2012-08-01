@@ -285,6 +285,17 @@ Apps are expected to
 + accept the namespace given to them as $APPNAME, possibly with some interpretation
 + apps whose files all reside externally can be added by dropping one
   file, not derived from a template.  The index.conf does this.
+** Caveats
+*** Use of non-Sanger domains, including localhost
+Note that the Otter Client writes the WTSISignOn cookie from enigma
+with a .sanger.ac.uk domain, so it will not be used if you are
+connecting to localhost.
+
+(If you need to do that, making a duplicate cookie to offer to
+localhost should work.)
+
+Symptoms are repeatedly asking for the password, getting 200 OK each
+time.
 ** Open questions
 *** TODO Do we want host-dependent environment setup?
 As in "source APACHECTL.$(hostname -s).sh"
