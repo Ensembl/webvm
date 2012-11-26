@@ -9,6 +9,11 @@ APACHE2=/usr/sbin/apache2
 export APACHE2_MODS=/usr/lib/apache2/modules
 export APACHE2_SHARE=/usr/share/apache2
 
+# required vars, not always set from cron
+: ${USER:=$(whoami)}
+: ${HOME:=$(bash -c 'echo ~')} # ugh
+
+
 op=$( basename $0 )
 if [ "$op" = 'APACHECTL' ]; then
     op=$1
