@@ -56,7 +56,8 @@ and configure via APACHECTL.sh
 
 
 set -e
-printf "\n** Apache config & bootstrap: %s\n" "$WEBVM"
+printf "\n** Apache config & bootstrap: %s\n   nb. requires empty %s\n" \
+    "$WEBVM" "$INSTALL_TO"
 git clone "$WEBVM" "$INSTALL_TO"
 printf "\n** Large Perl libs: %s\n" "$WDEPS"
 git clone "$WDEPS" "$INSTALL_TO/apps/webvm-deps"
