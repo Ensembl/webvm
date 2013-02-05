@@ -37,8 +37,13 @@ sub import {
         }
     }
 
-    # prepend to @INC, maintaining order
+    # append to @INC, maintaining order
+    my @old_INC = @INC;
     lib->import(@lib);
+    lib->import(@old_INC);
+    # This perverse arrangement gives the benefits of 'use lib' but
+    # allows to append, which we must do to keep OTTER_PERL_INC at top
+    # priority.
 
     return;
 }
