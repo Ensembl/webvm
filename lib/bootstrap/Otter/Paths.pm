@@ -148,13 +148,30 @@ sub bioperl {
 
 sub otter {
     my ($pkg, $otter_version) = @_;
-
-    # XXX:DUP Otter::EnvFix
-    my ($otterlace_server_root) = # NB: untainted by pattern match
-      ($ENV{OTTERLACE_SERVER_ROOT}||'') =~ m(\A(.*?)/?$)
-        or die "Need OTTERLACE_SERVER_ROOT to find Otter v$otter_version";
-
+    my $otterlace_server_root = $pkg->code_root;
     return sprintf '%s/lib/otter/%s', $otterlace_server_root, $otter_version;
+}
+
+sub code_root { # XXX:DUP Bio::Otter::Server::Config->data_dir
+    my ($pkg) = @_;
+
+    # The usual way to find code
+    my $DR  = ($ENV{DOCUMENT_ROOT}        ||'');
+
+    # Accepted to follow cgi_wrap convention, but not used?
+    # Bio::Otter::Server::Config doesn't use it
+    my $OSR = ($ENV{OTTERLACE_SERVER_ROOT}||'');
+
+    my $out; # NB: untainted by pattern match
+    $out   = $1 if $OSR =~ m(\A(.+?)/?$);
+    $out ||= $1 if $DR  =~ m(\A(.+)/htdocs/?$);
+
+    die "Need OTTERLACE_SERVER_ROOT or DOCUMENT_ROOT to find Otter Server files"
+      unless defined $out;
+    die "OTTERLACE_SERVER_ROOT=$OSR,DOCUMENT_ROOT=$DR => directory $out (absent)"
+      unless -d $out;
+
+    return $out;
 }
 
 
