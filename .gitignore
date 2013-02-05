@@ -4,3 +4,10 @@
 
 # local environment config
 /APACHECTL.sh
+
+
+# Otter Server builds.  Might be versioned on a production branch?
+/cgi-bin/otter/[0-9][0-9]/
+/cgi-bin/otter/[0-9][0-9][0-9]/
+/lib/otter/[0-9][0-9]/
+/lib/otter/[0-9][0-9][0-9]/
