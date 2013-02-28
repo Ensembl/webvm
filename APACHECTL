@@ -33,9 +33,9 @@ apache_defines() {
     . "$WEBDIR/APACHECTL.sh"
 }
 
-: ${WEBTMPDIR:="$( dirname "$WEBDIR" )/tmp/$( basename "$WEBDIR" )"}
+: ${WEBTMPDIR:="$( echo "$WEBDIR" | sed -e s,^/www/,/www/tmp/, )"}
 [ -d "$WEBTMPDIR" ] && [ -w "$WEBTMPDIR" ] || {
-    echo "Abort: Guessed WEBTMPDIR=$WEBTMPDIR incorrectly, please have it created & writable, or override by environment" >&2
+    echo "Abort: Guessed WEBTMPDIR=$WEBTMPDIR incorrectly from WEBDIR=$WEBDIR, please have it created & writable, or override by environment" >&2
     exit 2
 }
 

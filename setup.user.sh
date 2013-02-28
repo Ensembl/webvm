@@ -11,7 +11,7 @@
 : ${WDEPS:=intcvs1:/repos/git/anacode/webvm-deps.git}
 : ${HTTPD:=intcvs1:/repos/git/anacode/httpd.git}
 
-: ${INSTALL_TO:=$WEBDIR/$FOR_USER}
+: ${INSTALL_TO:=$WEBDIR/$FOR_USER/www-dev}
 : ${STATEDIR:="$WEBDIR/tmp/$FOR_USER"}
 
 
