@@ -1,3 +1,7 @@
+#! /bin/sh
+
+echo \
+aptitude install -q -q -q -y $( grep -vE '^#' <<EOF
 
 # Otter Server
 libb-hooks-endofscope-perl
@@ -51,6 +55,9 @@ libspreadsheet-writeexcel-perl
 libswitch-perl
 libcatalyst-devel-perl
 
+# pipeline-deps - for sandbox
+graphviz
+
 # cgi-bin/otterlist - for sandbox
 libfile-slurp-perl
 
@@ -61,3 +68,17 @@ libplack-perl
 libpoe-component-irc-perl
 libxml-rss-perl
 
+EOF
+)
+
+echo \
+cpan $( grep -vE '^#' <<EOF
+
+# Otter Server
+Bio::Das::Lite
+
+# pipeline-deps - for sandbox
+GraphViz2
+
+EOF
+)
