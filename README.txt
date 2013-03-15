@@ -269,6 +269,21 @@ The environment is more restrictive,
 Unlike the deskpro /usr/bin/perl, this one includes a full set of DBI
 modules.
 
+** Running Otter Server directly from a Git clone
+This can be done, but is potentially fragile
+
+ ln -s $EO/modules        $WEBDIR/lib/otter/74
+ ln -s $EO/scripts/apache $WEBDIR/cgi-bin/otter/74
+
+The differences between this and an install with `otterlace_build --server-only` are
++ includes GUI-only modules not in the Bio:: namespace
++ doesn't contain Bio::Otter::Git::Cache
+  - this absence can cause taint failures
+  - since 3020f3f1 it shouldn't break at compile time
+
+It works, but what happens when the checkout branch jumps to a new
+version and the symlink becomes stale?
+
 ** Containerised web apps
 + We do not expect to be able to use virtual hosts in this setting.
 + We do not want per-application edits to the main httpd.conf file.
