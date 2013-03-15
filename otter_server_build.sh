@@ -19,9 +19,11 @@ if [ -d ".git" ] && [ -f "dist/conf/version_major" ]; then
     # Looks like a dev copy.  Clone that instead.
     REPO_URL="$PWD"
     REPO_NAME=workdir
+    : ${BUILD_VSNS:=$( git branch | perl -ne 's/\*//; print if m{\b(master|humpub-branch-\d+)\b}' )}
 fi
 
-: ${BUILD_VSNS:=humpub-branch-71 humpub-branch-72 master}
+# XXX: something smarter, based on designations.txt ?
+: ${BUILD_VSNS:=humpub-branch-72 humpub-branch-73 master}
 
 # Build into the nearby {cgi-bin,lib}/
 OTT_DEST="$( cd $( dirname $0 ); pwd )"
