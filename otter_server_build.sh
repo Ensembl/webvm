@@ -71,7 +71,8 @@ for VSN in $BUILD_VSNS; do
     if git reset -q --hard $rev; then
         git log -1 --format=fuller --decorate | sedent
         export otter_nfswub="$OTT_DEST"
-        logfile="$( mktemp --tmpdir=$EOCLONE build-log.$VSN.XXXXXX )"
+        vsn_non_path=${VSN//\//.}
+        logfile="$( mktemp --tmpdir=$EOCLONE build-log.$vsn_non_path.XXXXXX )"
         if otterlace_build --server-only > $logfile 2>&1; then
             echo OK
         else
