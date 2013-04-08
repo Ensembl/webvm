@@ -1,6 +1,5 @@
 #! /bin/sh
 
-echo \
 aptitude install -q -q -q -y $( grep -vE '^#' <<EOF
 
 # Otter Server
@@ -68,10 +67,12 @@ libplack-perl
 libpoe-component-irc-perl
 libxml-rss-perl
 
+# commandline tools
+tig
+
 EOF
 )
 
-echo \
 cpan $( grep -vE '^#' <<EOF
 
 # Otter Server
