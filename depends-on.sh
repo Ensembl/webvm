@@ -1,5 +1,8 @@
 #! /bin/sh
 
+# Ran in https://rt.sanger.ac.uk/Ticket/Display.html?id=315205#txn-6659499
+# (CPAN test deps took too long)
+
 aptitude install -q -q -q -y $( grep -vE '^#' <<EOF
 
 # Otter Server
