@@ -28,10 +28,23 @@ apache_defines() {
     echo "$out"
 }
 
-[ -f "$WEBDIR/APACHECTL.sh" ] && {
+WEBTEAM_TYPE="$( perl -e 'print "$1\n" if (shift) =~ m{^/www(?:/[a-z0-9]+)?/(www-\w+)/?$}' "$WEBDIR" )" \
+    || exit 3
+if [ -f "$WEBDIR/APACHECTL.sh" ]; then
+    # Some user-specific config brought onto this branch.
+    # Takes precedence over WEBTEAM_TYPE
     echo "[d] source $WEBDIR/APACHECTL.sh"
     . "$WEBDIR/APACHECTL.sh"
-}
+elif [ -n "$WEBTEAM_TYPE" ]; then
+    # Standard configs for www-dev, www-live when running from their
+    # normal location
+    if [ -f "$WEBDIR/$WEBTEAM_TYPE.sh" ]; then
+        echo "[d] source $WEBDIR/$WEBTEAM_TYPE.sh"
+        . "$WEBDIR/$WEBTEAM_TYPE.sh"
+    else
+        echo "[d] expected to source $WEBDIR/$WEBTEAM_TYPE.sh but it is absent"
+    fi
+fi
 
 : ${WEBTMPDIR:="$( echo "$WEBDIR" | sed -e s,^/www/,/www/tmp/, )"}
 [ -d "$WEBTMPDIR" ] && [ -w "$WEBTMPDIR" ] || {
