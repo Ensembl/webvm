@@ -88,7 +88,7 @@ done
 
 stale=$(
     find $OTT_DEST/lib/otter $OTT_DEST/cgi-bin/otter \
-        -maxdepth 1 ! -newer $EOCLONE/.git/config -ls 2>&1
+        -maxdepth 1 -type d ! -newer $EOCLONE/.git/config -ls 2>&1
 )
 if [ -n "$stale" ]; then
     printf '\n\nW: stale server versions exist and were not touched\n'
