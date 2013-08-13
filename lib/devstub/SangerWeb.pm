@@ -5,8 +5,7 @@ use strict;
 use warnings;
 
 use Otter::EnvFix;
-
-my $username = (getpwuid($<))[0];
+use Carp;
 
 sub new {
     my ($pkg) = @_;
@@ -16,6 +15,8 @@ sub new {
 }
 
 sub username {
+    my $username = $ENV{BOGUS_AUTH_USERNAME};
+    confess "No development-mode username was given" unless defined $username;
     return $username;
 }
 

@@ -34,7 +34,12 @@ sub import {
     # patch the environment to prevent ServerScriptSupport.pm throwing
     # an error when running from the command line
     $ENV{DOCUMENT_ROOT} = "${otterlace_server_root}/htdocs";
-    $ENV{HTTP_CLIENTREALM} = 'sanger'; # emulate a local user
+
+    # Feed some bogus-but-safe authentication info to SangerWeb
+    # (provided in sibling file) and Bio::Otter::ServerScriptSupport
+    $ENV{BOGUS_AUTH_USERNAME} = (getpwuid($<))[0].'@fake.sangerweb';
+    $ENV{HTTP_CLIENTREALM} = 'sanger,bogus'; # emulate a local user
+    warn "This is DEVEL mode - bogus authentication in use";
 
     # Error-wrapping is for running on command line (cgi_wrap)
     $Bio::Otter::ServerScriptSupport::ERROR_WRAPPING_ENABLED =
@@ -43,8 +48,6 @@ sub import {
 
     # disable compression
     $Bio::Otter::ServerScriptSupport::COMPRESSION_ENABLED = 0;
-
-    warn "Should be in DEVEL mode";
 
     return ();
 }
