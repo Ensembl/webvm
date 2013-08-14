@@ -1,0 +1,23 @@
+#!/bin/bash
+
+## Check we have any scripts!
+t=`ls -1 $0.d/*.pl 2>/dev/null`;
+if [ ${#t} -eq 0 ]; then exit 0; fi
+
+## Start with a zero exit code!
+EXIT_CODE=0
+
+## Loop through each pl file in the appropriate .d directory
+## e.g. for pre-commit it looks through pre-commit.d
+for HOOK in $0.d/*.pl; do
+  $HOOK $@
+  ## Run $HOOK with the parameters passed into the script
+  ## If it exits with an non-zero error code ($?), set final
+  ## exit code to 1
+  if [[ $? -ne 0 ]]; then 
+    EXIT_CODE=1 
+  fi
+done
+
+## Exit with the appropriate error code
+exit $EXIT_CODE

@@ -1,0 +1,100 @@
+#!/usr/bin/perl
+
+## Tail error/access logs
+## Author         : js5
+## Maintainer     : js5
+## Created        : 2009-08-12
+## Last commit by : $Author: js5 $
+## Last modified  : $Date: 2010-09-08 12:41:51 +0100 (Wed, 08 Sep 2010) $
+## Revision       : $Revision: 1030 $
+## Repository URL : $HeadURL: svn+ssh://svn.internal.sanger.ac.uk/repos/svn/coreweb/webcode-09/trunk/utilities/taillog $
+
+use strict;
+use warnings;
+use utf8;
+
+use version qw(qv); our $VERSION = qv('0.1.0');
+
+use English qw(-no_match_vars $PROGRAM_NAME $ERRNO);
+
+use Getopt::Long qw(GetOptions);
+use File::Basename qw(dirname basename);
+use Cwd qw(abs_path);
+
+my $path    = dirname(dirname(abs_path($PROGRAM_NAME)));
+my $command = basename($PROGRAM_NAME);
+my $system  = basename($path);
+
+my ($help, $do_access, $both, $notimer, $timer, $dryrun);
+
+my $lines = 0;
+
+GetOptions(
+  'access'  => \$do_access,
+  'both'    => \$both,
+  'lines=i' => \$lines,
+  'h'       => \$help,
+  'timer'   => \$timer,
+  'notimer' => \$notimer,
+  'dryrun'  => \$dryrun,
+);
+## no critic (ImplicitNewlines RequireCarping)
+die '
+------------------------------------------------------------------------
+Usage:
+  utilities/taillog
+    [-a|--access]
+    [-b|--both]
+    [-d|--dryrun]
+    [-l|--lines]
+    [-h|--help]
+    [-n|--notimer]
+    [-t|--timer]
+
+Options:
+  -a, --access    : Tails access log instead of error log
+  -b, --both      : Tails access and error log (using multitail)
+  -d, --dryrun    : Display the command to be executed 
+                    (so can see name of log file)
+  -h, --help      : print this help message
+  -n, --notimer   : Hide all Timer "TI:" lines
+  -t, --timer     : Show only Timer "TI:" lines
+
+Notes:
+  For -b to work must have multitail installed
+  http://www.vanheusden.com/multitail/
+
+------------------------------------------------------------------------
+' if $help;
+## use critic;
+
+## Default to logs in server root directory!
+
+my $lr = $path.'/logs';
+
+## If it is www-.... then look for 
+$lr = "/www/tmp/$1/logs" if $path =~ m{^\/www\/(([-\w]+\/)?www-\w+)}mxs;
+
+my $al = "$lr/diagnostic.log";
+my $el = "$lr/error.log";
+
+my $cmd = q();
+my $flag = $lines ? "-$lines" : '-f';
+if( $both ) {
+  $cmd = "multitail -o check_mail:0 --mergeall -ci yellow,,bold $al $el";
+} elsif( $do_access ) {
+  $cmd = "tail $flag $al";
+} else {
+  $cmd = "tail $flag $el";
+  if( $timer ) {
+    $cmd .= q(| grep '^TI:');
+  } elsif( $notimer ) {
+    $cmd .= q(| grep -v '^TI:');
+  }
+}
+if( $dryrun ) {
+  printf "Command that would be executed:\n\n  %s\n\n", $cmd;
+  exit;
+}
+exec $cmd or die "Could not tail log: $ERRNO.\n";
+

@@ -1,0 +1,782 @@
+#!/usr/bin/perl
+
+## Run perl critic over all local perl modules and produce report and pages
+## Author         : js5
+## Maintainer     : js5
+## Created        : 2009-08-12
+## Last commit by : $Author: js5 $
+## Last modified  : $Date: 2010-11-22 13:16:08 +0000 (Mon, 22 Nov 2010) $
+## Revision       : $Revision: 1038 $
+## Repository URL : $HeadURL: svn+ssh://svn.internal.sanger.ac.uk/repos/svn/coreweb/webcode-09/trunk/utilities/critic-perl $
+
+use strict;
+use warnings;
+use utf8;
+
+use version qw(qv); our $VERSION = qv('0.1.0');
+
+use HTML::Entities qw(encode_entities);
+
+use Perl::Critic;
+use Data::Dumper;
+use Getopt::Long qw(GetOptions);
+use Time::HiRes qw(time);
+use English qw(-no_match_vars $INPUT_RECORD_SEPARATOR $PROGRAM_NAME $EVAL_ERROR);
+use Date::Format qw(time2str);
+use File::Basename qw(dirname);
+use Cwd qw(abs_path);
+
+my $ROOT_PATH;
+BEGIN {
+  $ROOT_PATH = dirname(dirname(abs_path($PROGRAM_NAME)));
+}
+use lib "$ROOT_PATH/lib";
+
+use Pagesmith::Utils::PerlCritic qw(skip);
+
+use Readonly qw(Readonly);
+Readonly my $PERC => 100;
+
+my $skip = skip();
+# Set up package globals....
+my $start_time     = time;
+my $run_at         = time2str( '%a, %d %b %Y %H:%M %Z', $start_time );
+my $o              = {}; ### overall totals
+my $p              = {}; ### by root directory totals...
+my $t              = {}; ### by module totals...
+my $totals         = {};
+my $site;
+my $files          = {};
+my $cache_filename = q();
+
+my $dir_root;
+my $quiet = 0;
+my $html_path;
+my @lib_paths;
+my %dir_map;
+
+# --------------------------------------
+
+_init();
+_get();
+_run();
+
+sub _init {
+  GetOptions(
+    'quiet'   => \$quiet,
+    'root=s'  => \$dir_root,
+    'site=s'  => \$site,
+    'out=s'   => \$html_path,
+    'lib=s'   => \@lib_paths,
+  );
+
+  die "You must specify a site or out path to generate the HTML into\n" unless $site || $html_path;
+  $dir_root  ||= $ROOT_PATH;
+
+  $html_path ||= "$dir_root/sites/$site/htdocs/docs/critic";
+  $cache_filename = $dir_root.'/tmp/packed/critic-perl';
+  if( @lib_paths ) {
+    %dir_map = map { ($_ => $_) } @lib_paths;
+  } else {
+    @lib_paths = ( "$dir_root/lib", "$dir_root/utilities" );
+    %dir_map   = ("$dir_root/lib" => 'lib', "$dir_root/utilities" => 'utilities' );
+
+    my $dh;
+    my @dirs;
+    if( opendir $dh, "$dir_root/sites" ) {
+      while ( defined (my $file = readdir $dh) ) {
+        next if $file =~ m{\A[.]}mxs;
+        push @dirs, [ "$dir_root/sites/$file", $file ];
+      }
+      closedir $dh;
+    }
+    if( opendir $dh, $dir_root ) {
+      while ( defined (my $file = readdir $dh) ) {
+        next if $file =~ m{\A[.]}mxs;
+        push @dirs, [ "$dir_root/$file", $file ];
+      }
+      closedir $dh;
+    }
+    foreach my $a_ref ( sort { $a->[0] cmp $b->[0] } @dirs) {
+      my $new_path = $a_ref->[0];
+      my $file     = $a_ref->[1];
+      foreach ( qw(lib utilities cgi perl) ) {
+        if( -d $new_path && -d "$new_path/$_" ) {
+          $dir_map{ "$new_path/$_" } = "$file/$_";
+          push @lib_paths, "$new_path/$_";
+        }
+      }
+    }
+  }
+
+  push @INC, @lib_paths;
+  if( -e $cache_filename ) {
+    if( open my $fh, '<', $cache_filename ) {
+      msg( "Cache file $cache_filename read" );
+      local $INPUT_RECORD_SEPARATOR = undef;
+      $t = eval <$fh>; ## no critic (StringyEval)
+      close $fh; ## no critic (RequireChecked)
+    }
+  }
+  return;
+}
+
+## Global variables .....
+sub _get {
+  foreach my $libpath (@lib_paths) {
+    _get_files( $files, $libpath, q(), $libpath );
+  }
+  return;
+}
+
+sub _run {
+  my %unindex_files;
+  foreach my $root ( keys %{$t->{'info'}} ) {
+    $unindex_files{ $root } = { map { ($_,1) } keys %{$t->{'info'}{$root}} };
+  }
+
+  foreach my $root ( @lib_paths ) { ## sort keys %{$files} ) {
+    next unless exists $files->{$root};
+    foreach my $module ( sort keys %{$files->{$root}} ) {
+      ## If the module file is openable ....
+      ( my $safe_module = $module ) =~ s{::}{__}mxsg;
+      ( my $safe_root = $dir_map{$root} ) =~ s{/}{__}mxsg;
+      if( !-e $files->{$root}{$module} && exists $t->{'info'}{$files}{$module} ) {
+        msg( "Module $module does not exist" );
+        _clean_up_module( $root, $module );
+      }
+      my ($dev,$ino,$mode,$nlink,$uid,$gid,$rdev,$size,$atime,$mtime,$ctime,$blksize,$blocks) = stat $files->{$root}{$module};
+      if( exists $t->{'last'}{$root}{$module} && $t->{'last'}{$root}{$module} > $mtime ) {
+        msg( "Skipping module $module as up to date ".$files->{$root}{$module} ) unless $quiet;
+        delete $unindex_files{ $root }{ $module };
+        next;
+      }
+      delete $unindex_files{ $root }{ $module };
+      ## Can't open input file so remove from t...
+      my $in_fh;
+      my $exceptions;
+      if( open $in_fh,'<',$files->{$root}{$module} ) {
+        $exceptions = _parse_file_for_exceptions( $in_fh );
+        close $in_fh; ##no critic (RequireChecked)
+      } else {
+        _clean_up_module( $root, $module );
+        next;
+      }
+      ## Get exceptions
+      ## Get critic response...
+      _clean_up_module( $root, $module ); ## Remove the HTML file and reset totals to zero!
+      _critic_module({
+        'root'   => $root,
+        'module' => $module,
+        'file'   => $files->{$root}{$module},
+        'exc'    => $exceptions,
+        'path'   => "$html_path/perl/$safe_root--$safe_module.html",
+      });
+    }
+  }
+  foreach my $root ( keys %unindex_files ) {
+    foreach my $module ( keys %{$unindex_files{$root}} ) {
+      _clean_up_module( $root, $module );
+      msg( "Removing old module $root -- $module" );
+    }
+  }
+  _push_cache();
+
+  __generate();
+  return;
+}
+
+sub __generate {
+  msg( 'Generating summaries' );
+  _generate_summaries();
+
+  msg( "Generating index page $html_path/perl/index.html" );
+  if( open my $index_fh, '>', "$html_path/perl/index.html" ) {
+    _generate_index_html( $index_fh, $o );
+    close $index_fh; ##no critic (RequireChecked)
+  }
+
+  msg( "Generating modules include file $html_path/inc/perl-modules.inc" );
+  if( open my $inc_fh, '>', "$html_path/inc/perl-modules.inc" ) {
+    _generate_inc_file( $inc_fh );
+    close $inc_fh; ##no critic (RequireChecked)
+  }
+
+  msg( "Generating summary include file $html_path/inc/perl-summary.inc" );
+  if( open my $inc_fh, '>', "$html_path/inc/perl-summary.inc" ) {
+    _generate_summary_file( $inc_fh );
+    close $inc_fh; ##no critic (RequireChecked)
+  }
+  msg( 'Finished' );
+
+  foreach my $root ( sort keys %{$files} ) {
+    printf "%4d %4d %4d %4d %s\n",
+      $p->{$root}{'totals'}{'vis'}||0,
+      $p->{$root}{'totals'}{'all'}||0,
+      $p->{$root}{'totals'}{'vis_force'}||0,
+      $p->{$root}{'totals'}{'all_force'}||0,
+      $root;
+  }
+  printf "%4d %4d %4d %4d TOTAL\n",
+    $o->{'totals'}{'vis'}||0,
+    $o->{'totals'}{'all'}||0,
+    $o->{'totals'}{'vis_force'}||0,
+    $o->{'totals'}{'all_force'}||0;
+  return;
+}
+
+
+# Write out cache file...
+sub _push_cache {
+  if( open my $fh, '>', $cache_filename ) {
+    msg( "Cache file $cache_filename written" );
+    my $d = Data::Dumper->new([$t], [qw(t)])->Terse(1)->Indent(1)->Sortkeys(1)->Dump(); ## no critic (LongChainsOfMethodCalls)
+    print {$fh} $d; ## no critic (CheckedSyscalls)
+    close $fh; ## no critic (RequireChecked)
+  }
+  return;
+}
+
+# Generate summary hash (summarise over modules)
+
+###########
+###########  Now the support functions...............
+###########
+
+sub _critic_module {
+  my $href = shift;
+  my $root   = $href->{'root'};
+  my $module = $href->{'module'};
+  $t->{'last'}{$root}{$module} = time;
+  my $res = eval {
+    my @viol_critic = Perl::Critic->new( '-severity' => 1 )->critique( $href->{'file'} );
+    my @viol_forced = Perl::Critic->new( '-severity' => 1, '-force' => 1 )->critique( $href->{'file'} );
+    my $err;
+    if( -e 'perltidy.ERR' ) {
+      local $INPUT_RECORD_SEPARATOR = undef;
+      if( open my $tfh, q(-|), 'touch perltidy.ERR' ) {
+        close $tfh; ## no critic (RequireChecked)
+      }
+      if( open my $fh, q(<), 'perltidy.ERR' ) {
+        $err = <$fh>;
+        close $fh; ## no critic (RequireChecked)
+      }
+      unlink 'perltidy.ERR';
+    }
+    my $X = substr $href->{'file'}, length $ROOT_PATH;
+    return unless open my $mod_fh, '>', $href->{'path'}; ## no critic (BriefOpen);
+    _generate_module_html({
+      'fh'          => $mod_fh,
+      'root'        => $root,
+      'module'      => $module,
+      'violations'  => \@viol_critic,
+      'violations_forced' => \@viol_forced,
+      'exceptions'  => $href->{'exc'},
+      'module_path' => $X,
+      'err'         => $err,
+    });
+    close $mod_fh; ##no critic (RequireChecked)
+    $t->{'totals'}{$root}{$module}{'vis_force'}||=0;
+    printf "%4d %4d %4d %4d %s\n",
+      $t->{'totals'}{$root}{$module}{'vis'},       $t->{'totals'}{$root}{$module}{'all'},
+      $t->{'totals'}{$root}{$module}{'vis_force'}, $t->{'totals'}{$root}{$module}{'all_force'},
+      $module;
+  };
+  if( $EVAL_ERROR ) {
+    printf "Critic Failed       %s\n `----- %s\n", $module, $EVAL_ERROR;
+    $t->{'err'}{$root}{$module} = $EVAL_ERROR;
+  }
+
+  return;
+}
+
+sub _parse_file_for_exceptions {
+  my( $fh ) = @_;
+  my $line = 0;
+  my @exceptions;
+  while(<$fh>) {
+    $line ++;
+    my( $prefix, $flag, $critic ) = split m{\#\#\s*(no|use)\s+critic\s*}mxs;
+    next unless $flag;
+    my @modules = $critic =~ m{[(]([^)]+)[)]}mxs ? split m{\s+}mxs, $1 : (q(************));
+    push @exceptions, map {
+      { 'postfix' => $prefix =~ m{\S}mxs ? 1 : 0, 'flag' => $flag, 'module' => $_, 'line' => $line }
+    } @modules;
+  }
+  return \@exceptions;
+}
+
+sub _get_files {
+  my( $l_files, $path, $prefix, $root ) = @_;
+  return unless -e $path && -d $path && -r $path;
+  my $dh;
+  return unless opendir $dh, $path;
+  while ( defined (my $file = readdir $dh) ) {
+    my $new_path = "$path/$file";
+    next if $file =~ m{\A[.]}mxs;
+    next if $file =~ m{[.]b[ac]k\Z}mxs;
+    next if $file =~ m{~\Z}mxs;
+    if( -f $new_path ) { ## no critic (Filetest_f)
+      if( $file =~ m{^(.*)[.]p[ml]$}mxs ) { ## .pl || .pm files
+        $l_files->{$root}{ "$prefix$1" } = $new_path;
+      } else { ## Check other files to see if have #! line...
+        next unless open my $in_fh, '<', $new_path;
+        my $first_line = <$in_fh>;
+        close $in_fh; ## no critic (RequireChecked)
+        $l_files->{$root}{ "$prefix$file" } = $new_path if $first_line && $first_line =~ m{^\#!.*perl}mxs;
+      }
+    } elsif( -d $new_path ) {
+      _get_files( $l_files, $new_path, "$prefix$file".q(::), $root );
+    }
+  }
+  return;
+}
+
+sub _generate_summaries {
+  foreach my $root ( keys %{$t->{'info'}} ) {
+    foreach my $module ( keys %{$t->{'info'}{$root}} ) {
+      foreach my $severity ( keys %{ $t->{'info'}{$root}{$module} } ) {
+        foreach my $policy ( keys %{ $t->{'info'}{$root}{$module}{$severity} } ) {
+          foreach my $flag ( keys %{ $t->{'info'}{$root}{$module}{$severity}{$policy} } ){
+            $p->{'info'}{$root}{$severity}{$policy}{$flag} += $t->{'info'}{$root}{$module}{$severity}{$policy}{$flag};
+            $o->{'info'}{$severity}{$policy}{$flag}        += $t->{'info'}{$root}{$module}{$severity}{$policy}{$flag};
+          }
+        }
+        foreach my $flag ( keys %{ $t->{'tsev'}{$root}{$module}{$severity} } ){
+          $p->{'tsev'}{$root}{$severity}{$flag} += $t->{'tsev'}{$root}{$module}{$severity}{$flag};
+          $o->{'tsev'}{$severity}{$flag}        += $t->{'tsev'}{$root}{$module}{$severity}{$flag};
+        }
+      }
+      foreach my $flag ( keys %{ $t->{'totals'}{$root}{$module} } ){
+        $p->{'totals'}{$root}{$flag} += $t->{'totals'}{$root}{$module}{$flag};
+        $o->{'totals'}{$flag}        += $t->{'totals'}{$root}{$module}{$flag};
+      }
+    }
+  }
+  return;
+}
+
+#======================================================================#
+# Generates the module_html page
+# $fh                -> file handle of file to store output in.
+# $module            -> Module name
+# $violations        -> List of violations
+# $violations_forced -> List of violations including ALL output..
+# $exceptions        ->
+#======================================================================#
+
+##no critic (ExcessComplexity)
+sub _generate_module_html {
+  my $pars = shift;
+  my $root   = $pars->{'root'};
+  my $module = $pars->{'module'};
+  ## no critic (ImplicitNewlines)
+  my $err = $pars->{'err'}||q();
+  $err = sprintf '<pre>%s</pre>', encode_entities $err if $err;
+  printf {$pars->{'fh'}} q(<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html>
+<head>
+  <title>Perl::Critic: %s</title>
+  <meta http-equiv="X-Pagesmith-NoSpell" content="2" /><!-- Do not include the source in the page -->
+  <%% CssFile /core/css/developer/critic.css %%>
+</head>
+<body id="faculty">
+<div id="main">
+  <div class="panel">
+  <h3>Package: %s</h3>
+  %s
+  <ul class="tabs">
+    <li><a href="#critic">Critic</a></li>
+    <li><a href="#source">Source</a></li>
+    <li><a href="#docs">Structure and docs</a></li>
+  </ul>
+  <div id="critic">
+    <table summary="Summarised and classified output from perl critic for module %s - rows which have been hidden by no critic and ignored rules are initially hidden and can be shown by clicking on the links in the RH column" class="critic">),
+  $module, $module, $err, $module;
+  ## use critic
+  my $force = q();
+  my $cache = {};
+  foreach my $varray ( $pars->{'violations'}, $pars->{'violations_forced'} ) {
+    foreach my $v ( @{$varray} ) {
+      my($line,$rc,$vc) = @{$v->location};
+      ( my $policy = $v->policy ) =~ s{Perl::Critic::Policy::}{}mxs;
+## SKIP
+      my $hidden = 0;
+      $hidden = 1 if $skip->{$policy};
+
+      my $diag = encode_entities( $v->diagnostics );
+      ##no critic (ImplicitNewlines)
+      my $block = sprintf q(
+      <tbody class="severity-%d===">
+        <tr>
+          <th class="nowrap">Severity: %d</th>
+          <th>%s</th>
+          <th>%s</th>
+        </tr>
+        <tr>
+          <th class="nowrap">Line: <span class="goto">%d</span><br />Col: %d</th>
+          <td colspan="2">
+            <pre class="source">%s</pre>
+            <div class="description">%s
+              <pre class="info info-show">%s</pre>
+            </div>
+          </td>
+        </tr>
+      </tbody>),
+        $v->severity,
+        $v->severity, $policy, encode_entities($v->explanation),
+        $line, $rc, encode_entities($v->source),
+        encode_entities($v->description),
+        $diag;
+      ## use critic
+      next if $cache->{$block};
+
+      $t->{'info'}{$root}{$module}{$v->severity}{$policy}{'all'.$force} ++;
+      $t->{'tsev'}{$root}{$module}{$v->severity}{'all'.$force} ++;
+      $t->{'totals'}{$root}{$module}{'all'.$force} ++;
+      unless( $hidden ) {
+        $t->{'info'}{$root}{$module}{$v->severity}{$policy}{'vis'.$force} ++;
+        $t->{'tsev'}{$root}{$module}{$v->severity}{'vis'.$force} ++;
+        $t->{'totals'}{$root}{$module}{'vis'.$force} ++;
+      }
+      my $class = join q(),
+        $hidden ? ' ignore ignore-show' : q(),
+        $force eq '_force' ? ' forced forced-show' : q(),
+        $hidden || $force eq '_force' ? q() : ' show';
+      ( my $block_out = $block ) =~ s{(class="severity-\d)==="}{$1$class"}mxs;
+
+      $cache->{$block} = { 'line' => $line, 'rc' => $rc, 'sev' => $v->severity, 'vc' => $vc, 'txt' => $block_out };
+    }
+    $force = '_force';
+  }
+  foreach ( sort { ## no critic (ReverseSortBlock)
+    $cache->{$a}{'line'} <=> $cache->{$b}{'line'} ||
+    $cache->{$a}{'rc'}   <=> $cache->{$b}{'rc'}   ||
+    $cache->{$b}{'sev'}  <=> $cache->{$b}{'sev'}  ||
+    $a cmp $b
+  } keys %{$cache} ) {
+    print {$pars->{'fh'}} $cache->{$_}{'txt'}; ##no critic (CheckedSyscalls)
+  }
+# Now generate teh parts of the right hand side navigation
+# This is just a list of violations...
+
+  ## no critic (ImplicitNewlines CheckedSyscalls)
+  printf {$pars->{'fh'}} q(
+    </table>
+  </div>
+  <div id="source">
+    <%% Markedup -format perl -number line -ajax %s %%>
+  </div>
+</div>
+</div>
+<div id="rhs">
+<div class="col1">
+  <div class="panel">
+    <h3>Information</h3>
+    <ul class="indexboxes">), $pars->{'module_path'}, $module, $pars->{'module_path'};
+  ## use critic
+  $t->{'err'}{$root}{$module} = $pars->{'err'};
+  $t->{'totals'}{$root}{$module}{'vis'}||=0;
+  $t->{'totals'}{$root}{$module}{'all_force'}||=0;
+  $t->{'totals'}{$root}{$module}{'all'}||=0;
+  printf {$pars->{'fh'}} qq(\n      <li><span><span>%d</span><span class="ig">%d</span><span class="fo">%d</span></span><strong>TOTAL</strong></li>),
+    $t->{'totals'}{$root}{$module}{'vis'},
+    $t->{'totals'}{$root}{$module}{'all'} -
+      $t->{'totals'}{$root}{$module}{'vis'},
+    $t->{'totals'}{$root}{$module}{'all_force'};
+  foreach my $severity ( sort keys %{$t->{'info'}{$root}{$module}} ) {
+    $t->{'tsev'}{$root}{$module}{$severity}{'vis'}||=0;
+    $t->{'tsev'}{$root}{$module}{$severity}{'all_force'}||=0;
+    $t->{'tsev'}{$root}{$module}{$severity}{'all'}||=0;
+    my $class = _class( $t->{'tsev'}{$root}{$module}{$severity} );
+    printf {$pars->{'fh'}} qq(\n      <li class="severity-%d"><span><span>%d</span><span class="ig">%d</span><span class="fo">%d</span></span><strong>Severity %s</strong></li>),
+      $severity,
+      $t->{'tsev'}{$root}{$module}{$severity}{'vis'},
+      $t->{'tsev'}{$root}{$module}{$severity}{'all'} -
+        $t->{'tsev'}{$root}{$module}{$severity}{'vis'},
+      $t->{'tsev'}{$root}{$module}{$severity}{'all_force'},
+      $severity;
+    foreach my $policy ( sort keys %{$t->{'info'}{$root}{$module}{$severity}} ) {
+      $t->{'info'}{$root}{$module}{$severity}{$policy}{'vis'}||=0;
+      $t->{'info'}{$root}{$module}{$severity}{$policy}{'all_force'}||=0;
+      $t->{'info'}{$root}{$module}{$severity}{$policy}{'all'}||=0;
+      my $class = _class( $t->{'info'}{$root}{$module}{$severity}{$policy} );
+      printf {$pars->{'fh'}} qq(\n      <li class="severity-%d%s"><span><span>%d</span><span class="ig">%d</span><span class="fo">%d</span></span>%s</li>),
+        $severity,
+        $class eq q() ? q() : qq( $class),
+        $t->{'info'}{$root}{$module}{$severity}{$policy}{'vis'},
+        $t->{'info'}{$root}{$module}{$severity}{$policy}{'all'} -
+          $t->{'info'}{$root}{$module}{$severity}{$policy}{'vis'},
+        $t->{'info'}{$root}{$module}{$severity}{$policy}{'all_force'},
+        $policy;
+    }
+  }
+  print {$pars->{'fh'}} qq(  </ul>\n  </div>); ##no critic (CheckedSyscalls)
+## Now the list of forced exceptions...
+  if( @{$pars->{'exceptions'}} ) {
+    my %open_exceptions;
+    my @out;
+    foreach( @{$pars->{'exceptions'}} ) {
+      my $mod = $_->{'module'};
+      if( $_->{'postfix'} ) {
+        push @out, [ $_->{'line'}, sprintf qq(\n      <li><span class="goto">%d</span>%s</li>), $_->{'line'}, $mod ];
+      } elsif( $_->{'flag'} eq 'use' ) {
+        foreach my $open_mod ( sort keys %open_exceptions ) {
+          push @out, [
+            $open_exceptions{$open_mod},
+            sprintf qq(\n      <li><span><span class="goto">%d</span>-%d</span>%s</li>),
+            $open_exceptions{$open_mod},
+            $_->{'line'},
+            $open_mod,
+          ];
+          delete $open_exceptions{ $open_mod };
+        }
+      } else {
+        $open_exceptions{ $mod } = $_->{'line'};
+      }
+    }
+    foreach my $mod ( sort { $open_exceptions{$a} <=> $open_exceptions{$b} } keys %open_exceptions ) {
+      push @out, [
+        $open_exceptions{$mod},
+        sprintf qq(\n      <li><span><span class="goto">%d</span> - ***</span><strong>%s</strong></li>),
+        $open_exceptions{$mod},
+        $mod,
+      ];
+    }
+    printf {$pars->{'fh'}} qq(\n  <div class="panel">\n    <h3>Forced exceptions</h3>\n    <ul class="indexboxes">%s\n    </ul>\n  </div>),
+      join q(), map { $_->[1] } sort { $a->[0] <=> $b->[0] || $a->[1] cmp $b->[1] } @out;
+  }
+## Finally include the configuration panel and the module list...
+  ## no critic (ImplicitNewlines  CheckedSyscalls)
+  print {$pars->{'fh'}}
+  q(
+</div>
+<div class="col2">
+  <% File /docs/critic/inc/perl-configuration.inc %>
+  <% File /docs/critic/inc/perl-modules.inc %>
+</div>
+</div>
+<% JsFile /core/js/developer/critic.js %>
+</body>
+</html>);
+  ## use critic
+  return;
+}
+##use critic
+
+##no critic (ExcessComplexity)
+
+sub _generate_index_html {
+  my( $fh, $include_ignored ) = @_;
+  ##no critic (ImplicitNewlines CheckedSyscalls)
+  print {$fh} q(<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html>
+<head>
+  <title>Perl::Critic</title>
+  <meta http-equiv="X-Pagesmith-NoSpell" content="2" /><!-- Do not include the source in the page -->
+  <% CssFile /core/css/developer/critic.css %>
+</head>
+<body id="faculty">
+<div id="main">
+  <div class="panel">
+    <h3>Perl::Critic summary</h3>
+    <ul class="indexboxes diag-index hideentries">);
+  ## use critic
+  printf {$fh} qq(\n      <li class="show"><span><span>%d</span><span class="ig">%d</span><span class="fo">%d</span></span><strong>%s</strong></li>),
+    $o->{'totals'}{'vis'}||0,
+    ($o->{'totals'}{'all'}||0) -
+      ($o->{'totals'}{'vis'}||0),
+    $o->{'totals'}{'all_force'}||0,
+    'TOTAL';
+  foreach my $severity ( sort keys %{$o->{'info'}} ) {
+    $o->{'tsev'}{$severity}{'vis'}||=0;
+    $o->{'tsev'}{$severity}{'all'}||=0;
+    $o->{'tsev'}{$severity}{'all_force'}||=0;
+
+    my $class = _class( $o->{'tsev'}{$severity} );
+
+    printf {$fh} qq(\n      <li class="severity-%d%s"><span><span>%d</span><span class="ig">%d</span><span class="fo">%d</span></span><strong>Severity %s</strong><ol>),
+      $severity,
+      $class eq q() ? q() : qq( $class),
+      $o->{'tsev'}{$severity}{'vis'},
+      $o->{'tsev'}{$severity}{'all'} -
+      $o->{'tsev'}{$severity}{'vis'},
+      $o->{'tsev'}{$severity}{'all_force'},
+      $severity;
+    foreach my $policy ( sort keys %{$o->{'info'}{$severity}} ) {
+      $o->{'info'}{$severity}{$policy}{'vis'}||=0;
+      $o->{'info'}{$severity}{$policy}{'all'}||=0;
+      $o->{'info'}{$severity}{$policy}{'all_force'}||=0;
+      my $class = _class( $o->{'info'}{$severity}{$policy} );
+      printf {$fh} qq(\n      <li class="ind-container %s"><span><span>%d</span><span class="ig">%d</span><span class="fo">%d</span></span>%s\n        <ol class="ind ind-show">),
+        $class eq q() ? q() : qq( $class),
+        $o->{'info'}{$severity}{$policy}{'vis'},
+        $o->{'info'}{$severity}{$policy}{'all'} - $o->{'info'}{$severity}{$policy}{'vis'},
+        $o->{'info'}{$severity}{$policy}{'all_force'},
+        $policy;
+      foreach my $root ( sort keys %{$t->{'info'}} ) {
+        foreach my $module ( sort keys %{$t->{'info'}{$root}} ) {
+          ( my $safe_module = $module ) =~ s{::}{__}mxsg;
+          ( my $safe_root   = $dir_map{$root}   ) =~ s{/}{__}mxsg;
+          if( exists $t->{'info'}{$root}{$module}{$severity}{$policy} ) {
+            my $class = _class( $t->{'info'}{$root}{$module}{$severity}{$policy} );
+            printf {$fh} qq(\n          <li%s><span><span>%d</span><span class="ig">%d</span><span class="fo">%d</span></span>%s - <a href="%s--%s.html">%s</a></li>),
+              $class eq q() ? q() : qq( class="$class"),
+              $t->{'info'}{$root}{$module}{$severity}{$policy}{'vis'}||0,
+              ($t->{'info'}{$root}{$module}{$severity}{$policy}{'all'}||0) -
+                ($t->{'info'}{$root}{$module}{$severity}{$policy}{'vis'}||0),
+              $t->{'info'}{$root}{$module}{$severity}{$policy}{'all_force'}||0,
+              encode_entities( $dir_map{$root} ),
+              $safe_root,
+              $safe_module,
+              $module;
+          }
+        }
+      }
+      print {$fh} "\n        </ol>\n      </li>";##no critic (CheckedSyscalls)
+    }
+    print {$fh} "\n    </ol>\n  </li>";##no critic (CheckedSyscalls)
+  }
+  ##no critic (ImplicitNewlines CheckedSyscalls)
+  print {$fh} '
+    </ul>
+  </div>
+</div>
+<div id="rhs">
+<div class="col1">
+  <% File /docs/critic/inc/links.inc %>
+  <% File /docs/inc/main-links.inc %>
+  <% File /docs/critic/inc/perl-configuration-index.inc %>
+</div>
+<div class="col2">
+  <% File /docs/critic/inc/perl-modules.inc %>
+</div>
+</div>
+<% JsFile /core/js/developer/critic.js %>
+</body>
+</html>';
+  ##use critic
+  return;
+}
+
+#use critic
+
+sub _generate_summary_file {
+  my( $inc_fh ) = @_;
+  ##no critic (ImplicitNewlines)
+  printf {$inc_fh} q(
+  <div class="panel">
+    <h3>Summary of Perl errors</h3>
+    <dl class="twocol evenwidth">
+      <dt>Time taken</dt>     <dd>%4.3f sec</dd>
+      <dt>Files processed</dt><dd>%d</dd>
+      <dt>Error files</dt>    <dd>%d</dd>
+      <dt>(as percentage)</dt><dd>%2.1f%%</dd>
+      <dt>Visible errors</dt> <dd>%d</dd>
+      <dt>Ignored errors</dt> <dd>%d</dd>
+      <dt>Forced errors</dt>  <dd>%d</dd>
+      <dt>Last run</dt>       <dd>%s</dd>
+    </dl>
+  </div>),
+    time - $start_time,
+    $totals->{'files'},
+    $totals->{'error_files'},
+    $totals->{'error_files'} / $totals->{'files'} * $PERC,
+    $o->{'totals'}{'vis'}||0,
+    ($o->{'totals'}{'all'}||0) -
+      $o->{'totals'}{'vis'}||0,
+    $o->{'totals'}{'all_force'}||0,
+    $run_at;
+  return;
+}
+  ## use critic
+sub _generate_inc_file {
+  my( $inc_fh ) = @_;
+  my $summary_html = q();
+  $totals= { 'files'=> 0,'error_files' => 0 };
+  foreach my $root ( @lib_paths ) {
+    next unless exists $t->{'totals'}{$root};
+    my $summary = q();
+    foreach my $module ( sort keys %{ $t->{'totals'}{$root} } ) {
+## Now generate the summary from $t....
+      $totals->{'files'}++;
+      my $class = _class( $t->{'totals'}{$root}{$module} );
+      $class = 'show tidy-error' if $t->{'err'}{$root}{$module};
+      $totals->{'error_files'}++ if $class =~ m{\Ashow}mxs;
+
+    ( my $safe_module = $module ) =~ s{::}{__}mxsg;
+    ( my $safe_root   = $dir_map{$root} ) =~ s{/}{__}mxsg;
+    $summary .= sprintf qq(\n          <li%s><span><span>%d</span><span class="ig">%d</span><span class="fo">%d</span></span><a href="/docs/critic/perl/%s--%s.html">%s</a></li>),
+      $class eq q() ? q() : qq( class="$class"),
+      $t->{'totals'}{$root}{$module}{'vis'},
+      $t->{'totals'}{$root}{$module}{'all'}-
+        $t->{'totals'}{$root}{$module}{'vis'},
+      $t->{'totals'}{$root}{$module}{'all_force'},
+      $safe_root, $safe_module, $module;
+    }
+    ## no critic (ImplicitNewlines)
+    $summary_html .= sprintf '
+      <li>
+        <ul class="indexboxes collapse_ol">
+          <li><span><span>%d</span><span class="ig">%d</span><span class="fo">%d</span></span><strong>%s</strong></li>
+        </ul>
+        <ol class="indexboxes hideentries">%s
+        </ol>
+      </li>',
+      $p->{'totals'}{$root}{'vis'}||0,
+      ($p->{'totals'}{$root}{'all'}||0) -
+        $p->{'totals'}{$root}{'vis'}||0,
+      $p->{'totals'}{$root}{'all_force'}||0,
+      $dir_map{$root},
+      $summary;
+    ## use critic
+  }
+
+  ##no critic (ImplicitNewlines)
+  printf {$inc_fh} q(
+  <div class="panel">
+    <h3>Modules</h3>
+    <p><a href="/docs/critic/perl/">Summary</a></p>
+    <ul class="indexboxes">
+      <li><span><span>%d</span><span class="ig">%d</span><span class="fo">%d</span></span><strong>Total</strong></li>
+      %s
+    </ul>
+  </div>
+  ),
+    $o->{'totals'}{'vis'}||0,
+    ($o->{'totals'}{'all'}||0) -
+      $o->{'totals'}{'vis'}||0,
+    $o->{'totals'}{'all_force'}||0,
+    $summary_html;
+  ##use critic (ImplicitNewlines)
+  return;
+}
+
+sub _class {
+  my $hashref = shift;
+  my %h = ( qw(vis 0 all_force 0 all 0), %{$hashref} );
+  return 'show' if $h{'vis'};
+  my @Q;
+  push @Q, 'ignore ignore-show' if $h{'all'}-$h{'vis'}>0;
+  push @Q, 'forced forced-show' if $h{'all_force'}>0;
+  return join q( ),@Q;
+}
+
+sub _clean_up_module {
+  my( $root, $module ) = @_;
+  foreach ( keys %{$t} ) {
+    delete $t->{$_}{$root}{$module};
+  }
+  ( my $safe_module = $module ) =~ s{::}{__}mxsg;
+  my $output_file =  "$html_path/perl/$dir_map{$root}--$safe_module.html";
+  unlink $output_file;
+  return;
+}
+
+sub msg {
+  my $string = shift;
+  printf {*STDERR} "%10.5f\t%s\n", time-$start_time, $string;
+  return;
+}

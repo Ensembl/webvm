@@ -1,0 +1,59 @@
+#!/usr/bin/perl
+
+##
+## Author         : js5
+## Maintainer     : js5
+## Created        : 2009-08-12
+## Last commit by : $Author$
+## Last modified  : $Date$
+## Revision       : $Revision$
+## Repository URL : $HeadURL$
+
+use strict;
+use warnings;
+use utf8;
+
+use version qw(qv); our $VERSION = qv('0.1.0');
+
+use File::Basename qw(dirname basename);
+use English qw(-no_match_vars $PROGRAM_NAME);
+use Cwd qw(abs_path);
+use IO::Handle;
+use Const::Fast qw(const);
+
+STDOUT->autoflush(1); ## no critic (ExplicitInclusion)
+
+const my $BLOCK_SIZE => 100;
+
+my $ROOT_PATH;
+BEGIN {
+  $ROOT_PATH = dirname(dirname(abs_path($PROGRAM_NAME)));
+}
+
+use lib "$ROOT_PATH/lib";
+
+use Pagesmith::ConfigHash qw(set_site_key override_config);
+use Pagesmith::Adaptor::Reference;
+## needed to get code to work....
+set_site_key( 'no-site' );
+override_config( 'ConfigKey', 'live' ); ## Makes use live databases rather than dev!
+
+
+my $rh = Pagesmith::Adaptor::Reference->new;
+
+my $entries = $rh->col( 'select xml from entry where pubmed');
+
+printf "Entries to update: %d\n", scalar @{$entries};
+
+my $split = @{$entries}/$BLOCK_SIZE;
+my $c = 0;
+foreach( @{$entries} ) {
+  my $e_ref = $rh->parse_pubmed_xml($_);
+  next unless @{$e_ref};
+  my $e = $e_ref->[0];
+  if( $c++ > $split ) {
+    print q(.);  ## no critic (CheckedSyscalls)
+    $c = 0;
+  }
+  $rh->write_to_db( $e );
+}

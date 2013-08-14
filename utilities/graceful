@@ -1,0 +1,173 @@
+#!/usr/bin/perl
+
+##
+## Author         : js5
+## Maintainer     : js5
+## Created        : 2009-08-12
+## Last commit by : $Author: js5 $
+## Last modified  : $Date: 2010-09-08 12:41:51 +0100 (Wed, 08 Sep 2010) $
+## Revision       : $Revision: 1030 $
+## Repository URL : $HeadURL: svn+ssh://svn.internal.sanger.ac.uk/repos/svn/coreweb/webcode-09/trunk/utilities/restart $
+
+use strict;
+use warnings;
+use utf8;
+
+use version qw(qv); our $VERSION = qv('0.1.0');
+
+use Const::Fast qw(const);
+
+const my $LINE_LENGTH  => 78;
+const my $DEFAULT_PORT => 8000;
+
+use English qw(-no_match_vars $PROGRAM_NAME $UID);
+
+use BSD::Resource qw(getrlimit);
+
+use File::Basename qw(dirname basename);
+use Cwd qw(abs_path);
+use Getopt::Long qw(GetOptions);
+use POSIX qw(strftime);
+
+my $path    = dirname(dirname(abs_path($PROGRAM_NAME)));
+
+my $command = basename($PROGRAM_NAME);
+my $system  = basename($path);
+my $flag    = $system =~ m{www-(\w+)\Z}mxs ? $1 : $system; ## Uses system name as flag....
+
+my @extra_params;
+
+my $help    = 0;
+my $access  = 0;
+my $error   = 0;
+my $both    = 0;
+my $profile = 0;
+
+GetOptions(
+  'help'    => \$help,
+  'access'  => \$access,
+  'both'    => \$both,
+  'logs'    => \$both,
+  'rotate'  => \$both,
+  'error'   => \$error,
+  'profile' => \$profile,
+);
+
+_docs() if $help;
+$access = 1 if $both;
+$error = 1 if $both;
+
+push @extra_params, '-DPAGESMITH_PROFILE' if $profile;
+
+printf {*STDERR} "\n%s\n  Performing action '%s' on system '%s'\n\n",
+  q(-) x $LINE_LENGTH,
+  $command, $system;
+
+## Defiend the port - it's either 8000 OR the contents of my-port file in 
+## checkout root!
+
+## Make a copy of the environment so we can re-construct it later!
+
+my %extra_env;
+
+my $port = parse_myport( \%extra_env );
+
+## Get user info
+my($name,$passwd,$uid,$gid,$quota,$comment,$gcos,$dir,$shell,$expire) = getpwuid $UID;
+my $group;
+my $user_is_root = 0;
+
+if( $name eq 'root' ) {
+  $name  = 'www-data';
+  $group = 'www-data';
+  $user_is_root = 1;
+} else {
+  $group = getgrgid $gid;
+}
+
+my $tmp_path = "$path/tmp";
+   $tmp_path = "/www/tmp/$1" if $path =~ m{^\/www\/(([-\w]+\/)?www-\w+)}mxs; ## We are in a sub-directory!
+my $log_path = $tmp_path.'/logs';
+_rotate_logs() if $access || $error;
+
+{
+  ## no critic (LocalizedPunctuationVars)
+  foreach (keys %extra_env) {
+    $ENV{$_} = $extra_env{$_};
+  }
+  $ENV{'PAGESMITH_SERVER_FLAG'}  = $flag;
+  $ENV{'PAGESMITH_SERVER_PORT'}  = $port;
+  $ENV{'PAGESMITH_SERVER_PATH'}  = $path;
+  $ENV{'PAGESMITH_SERVER_TMP' }  = $tmp_path;
+  $ENV{'PAGESMITH_SERVER_LOGS'}  = $log_path;
+  $ENV{'PAGESMITH_SERVER_USER'}  = $name;
+  $ENV{'PAGESMITH_SERVER_GROUP'} = $group;
+
+  my($now_soft,$now_hard) = getrlimit( 'RLIMIT_NOFILE' );
+
+  $ENV{'APACHE_ULIMIT_MAX_FILES'} = $now_hard == $now_soft ? q(:) : qq(ulimit -S -n $now_hard) unless $user_is_root;
+  ## use critic
+  my $return = system '/usr/sbin/apache2ctl', '-DPAGESMITH_'.uc $flag, @extra_params, '-d', "$path/apache2", '-f', 'core.d/httpd.conf', '-k', $command;
+  if( $return ) {
+    printf {*STDERR} "  Returned result: %s\n", $return;
+  } else {
+    printf {*STDERR} "  Returned OK\n";
+  }
+}
+
+printf {*STDERR} "%s\n\n",
+  q(-) x $LINE_LENGTH;
+
+sub _rotate_logs {
+  ## use GetOpt Long to look at doing an error log rotation!
+  my $time = strftime( '%Y-%m-%d--%H-%M-%S', gmtime );
+  system "mv $log_path/diagnostic.log $log_path/diagnostic--$time.log" if $access;
+  system "mv $log_path/error.log $log_path/error--$time.log" if $error;
+  return;
+}
+
+## no critic (ImplicitNewlines RequireCarping)
+sub _docs {
+  warn sprintf '
+Performs %s on the Apache running from this checkout
+
+  utilities/%s
+    [-a|--access]
+    [-e|--error]
+    [-l|-b|-r|--logs|--both|--rotate]
+    [-h|--help]
+
+Options:
+  -a, --access    : Time stamps access log before performing operation
+  -e, --error     : Time stamps error log begore performing operation
+  -b, --both      : Time stamp both logs
+  -r, --rotate    : Time stamp both logs
+  -l, --logs      : Time stamp both logs
+  -h, --help      : print this help message
+
+Notes:
+
+------------------------------------------------------------------------
+', $command, $command;
+  exit;
+}
+## use critic;
+sub parse_myport {
+  my( $env_hash ) = @_;
+  if( open my $fh, q(<), "$path/my-port" ) {
+    ( $port = <$fh> ) =~ s{\D}{}mxsg;
+    while( <$fh> ) {
+      chomp;
+      if( m{\A(\w+)\s+(\S+?)\s*\Z}mxs ) {
+  ## Extra environment lines!
+        $env_hash->{$1} = $2;
+      }
+    }
+    close $fh; ## no critic (RequireChecked)
+  } else {
+    print {*STDERR} "\nWARN: You do not have a my-port file in the root of your checkout...\n\n"; ## no critic (CheckedSyscalls)
+  }
+  $port ||= $DEFAULT_PORT;
+  return $port;
+}
+

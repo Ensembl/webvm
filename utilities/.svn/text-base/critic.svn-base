@@ -1,0 +1,4 @@
+#!/bin/bash
+/www/js5/www-dev/utilities/critic-perl
+/www/js5/www-dev/utilities/critic-js
+/www/js5/www-dev/utilities/critic-html
