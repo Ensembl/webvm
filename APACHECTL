@@ -12,6 +12,15 @@ export APACHE2_SHARE=/usr/share/apache2
 # required vars, not always set from cron
 : ${USER:=$(whoami)}
 : ${HOME:=$(bash -c 'echo ~')} # ugh
+#
+# nb. Debian clears $HOME because "it will be wrong", but we do not
+# setuid(2)
+
+# We have no specific requirements for these, but they should be
+# well-defined
+export LANG=C
+ulimit -n 1024
+# deskpro users 2013-08 are in "ulimit -H -n 1024"
 
 
 op=$( basename $0 )
