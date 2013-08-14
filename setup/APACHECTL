@@ -1,6 +1,6 @@
 #! /bin/sh
 
-WEBDIR="$( dirname $( readlink -e $0 ) )"
+WEBDIR="$( dirname $( dirname $( readlink -e $0 ) ))"
 # XXX:UBUNTU GNU-ism.
 
 # These are the Ubuntu defaults.  /usr/sbin is often not on our PATH
@@ -42,7 +42,7 @@ apache_defines() {
 
 WEBTEAM_TYPE="$( perl -e 'print "$1\n" if (shift) =~ m{^/www(?:/[a-z0-9]+)?/(www-\w+)/?$}' "$WEBDIR" )" \
     || exit 3
-if [ -f "$WEBDIR/APACHECTL.sh" ]; then
+if [ -f "$WEBDIR/setup/APACHECTL.sh" ]; then
     # Some user-specific config brought onto this branch.
     # Takes precedence over WEBTEAM_TYPE
     echo "[d] source $WEBDIR/APACHECTL.sh"
@@ -50,11 +50,11 @@ if [ -f "$WEBDIR/APACHECTL.sh" ]; then
 elif [ -n "$WEBTEAM_TYPE" ]; then
     # Standard configs for www-dev, www-live when running from their
     # normal location
-    if [ -f "$WEBDIR/$WEBTEAM_TYPE.sh" ]; then
-        echo "[d] source $WEBDIR/$WEBTEAM_TYPE.sh"
-        . "$WEBDIR/$WEBTEAM_TYPE.sh"
+    if [ -f "$WEBDIR/setup/$WEBTEAM_TYPE.sh" ]; then
+        echo "[d] source $WEBDIR/setup/$WEBTEAM_TYPE.sh"
+        . "$WEBDIR/setup/$WEBTEAM_TYPE.sh"
     else
-        echo "[d] expected to source $WEBDIR/$WEBTEAM_TYPE.sh but it is absent"
+        echo "[d] expected to source $WEBDIR/setup/$WEBTEAM_TYPE.sh but it is absent"
     fi
 fi
 
