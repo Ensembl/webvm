@@ -12,9 +12,12 @@ export APACHE2_SHARE=/usr/share/apache2
 # required vars, not always set from cron
 : ${USER:=$(whoami)}
 : ${HOME:=$(bash -c 'echo ~')} # ugh
+export USER
 #
 # nb. Debian clears $HOME because "it will be wrong", but we do not
 # setuid(2)
+#
+# HOME will not exist on {dev,staging,live} boxes
 
 # We have no specific requirements for these, but they should be
 # well-defined
