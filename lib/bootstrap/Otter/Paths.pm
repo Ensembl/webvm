@@ -37,13 +37,17 @@ sub import {
         }
     }
 
-    # append to @INC, maintaining order
-    my @old_INC = @INC;
+    # append to @INC ('use lib' prepends), maintaining order
+    # but leaving system libs at the end
+    my @old_INC = grep { not m{^/usr/} } @INC;
     lib->import(@lib);
     lib->import(@old_INC);
     # This perverse arrangement gives the benefits of 'use lib' but
     # allows to append, which we must do to keep OTTER_PERL_INC at top
     # priority.
+
+# Note that we do not want to pick up the wrong version of
+# Bio::Perl from /usr/share/perl5/Bio/SeqIO.pm
 
     return;
 }
@@ -134,6 +138,7 @@ sub bioperl {
 
     my %known_vsn =
       (123 => '1.2.3',
+       '' => '1.5.2_100', # 2006 vintage aka. "bioperl-live"
       );
 
     my $version = $known_vsn{$vsn_short} || $vsn_short;
