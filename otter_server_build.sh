@@ -1,4 +1,5 @@
-#! /bin/sh
+#! /bin/bash
+# Bash for bitwise arithmetic
 
 # This is rough and ready.  Something of a "how it could work" if we
 # wanted it like this.
@@ -64,6 +65,7 @@ sedent(){
     sed -e 's/^/  /'
 }
 
+retcode=0
 for VSN in $BUILD_VSNS; do
     printf '\n\n\nBuilding for %s\n' "$VSN"
     cd "$EOCLONE"
@@ -78,10 +80,11 @@ for VSN in $BUILD_VSNS; do
         else
             cat $logfile | sedent
             echo $VSN failed >&2
-            exit 2
+            retcode=$(( $retcode | 8 ))
         fi
     else
         echo "Skip: build for $VSN because $rev not found"
+        retcode=$(( $retcode | 4 ))
     fi
 done
 
@@ -92,7 +95,13 @@ stale=$(
 )
 if [ -n "$stale" ]; then
     printf '\n\nW: stale server versions exist and were not touched\n'
-    printf '%s' "$stale" | sedent
-else
-    echo All server versions updated
+    printf '%s\n' "$stale" | sedent
+    retcode=$(( $retcode | 2 ))
 fi
+
+if [ "$retcode" = 0 ]; then
+    echo All server versions updated
+else
+    echo Some things went wrong
+fi
+exit $retcode
