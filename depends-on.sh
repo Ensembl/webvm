@@ -49,6 +49,9 @@ libxml-sax-base-perl
 libxml-simple-perl
 libyaml-perl
 
+# old SangerWeb dependency, for Otter Server; also in Otter client
+libconfig-inifiles-perl
+
 # cubane - for sandbox
 libspreadsheet-parseexcel-perl
 libspreadsheet-writeexcel-perl
