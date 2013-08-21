@@ -35,6 +35,7 @@ fi
 
 pidfile="$WEBTMPDIR/logs/apache2.pid"
 
+: ${USER:=${LOGNAME:=$( whoami )}}
 if [ -f "$pidfile" ]; then
     pidval="$( cat "$pidfile" )"
     run_as="$( ps -w -w -o user= -p "$pidval" )"
