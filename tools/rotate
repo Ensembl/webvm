@@ -1,0 +1,61 @@
+#! /bin/sh
+
+set -e
+now=$( date +%F--%H%M )
+squee="nice -20 ionice -c3 bzip2 -9"
+export max_du_percent=75
+
+#
+# Log rotation & compression.
+#
+# Call periodically as 'utilities/rotate'
+#
+
+seddent() {
+    sed -e 's/^/    /'
+}
+
+space_warning() {
+    df -hP . | perl -e '
+ $pc=$ENV{max_du_percent};
+ $/="";
+ $_=<>;
+ s/^/    /mg;
+ print "df over threshold $pc%\n$_\n" if !m{\s+(\d+)%} || $1 > $pc'
+#Filesystem                    Size  Used Avail Use% Mounted on
+#/dev/mapper/ottersand01-data   50G  1.1G   49G   3% /www
+}
+
+if [ -z "$WEBDIR" ]; then
+    echo "$0: Please call as utilities/rotate" >&2
+    exit 3
+fi
+
+cd $WEBTMPDIR/logs
+
+space_warning
+
+if [  -f $now.error_log  ] || [ -f $now.error_log.gz  ] || [ -f $now.error_log.bz2  ] || \
+    [ -f $now.access_log ] || [ -f $now.access_log.gz ] || [ -f $now.access_log.bz2 ]; then
+    printf "%s: Too early to rotate again, files exist for %s\n%s\n\n" \
+        "$0" "$now" "$( ls -lrt $now.* 2>&1 | seddent )" >&2
+    exit 4
+elif [ -f error_log ] && [ -f access_log ]; then
+    # We can assume Apache is writing to the correct place, so
+    # previous rotate completed with graceful, and old logs are
+    # closed
+    if $squee *.error_log *.access_log; then
+        :
+        # ok
+    else
+        printf "%s: Error compressing old logs with '%s', now have\n%s\n\ncontinuing...\n" \
+            "$0" "$squee" "$( ls -lrt *.*log 2>&1 | seddent )" >&2
+    fi
+    mv error_log  $now.error_log
+    mv access_log $now.access_log
+    $WEBDIR/utilities/graceful
+else
+    echo "$0: Not rotating in $PWD, Apache not restarted?" >&2
+    $WEBDIR/utilities/graceful
+    exit 5
+fi
