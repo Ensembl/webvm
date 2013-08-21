@@ -1,0 +1,52 @@
+#! /bin/sh
+
+#
+# With the fewest possible resources (to allow use in high-frequency
+# crontab), see that Apache has started.
+#
+# This is a workaround for the failure of crond to acknowledge LDAP
+# users in time for @reboot jobs & should not be needed in production.
+#
+#
+#        Unlike most other tools/ scripts, this
+#        one is intended to be run directly.
+#
+
+
+if [ -n "$WEBDIR" ]; then
+    # run under setup/APACHECTL.sh
+    if [ -n "$1" ]; then
+        echo "[w] $0: Superfluous arg $1, I have WEBTMPDIR=$WEBTMPDIR the slow way" >&2
+        [ "$1" = "$WEBTMPDIR" ] || echo "[w] Given arg mismatch!" >&2
+    fi
+elif [ -n "$1" ]; then
+    # run with explicit WEBTMPDIR
+    WEBTMPDIR="$1"
+    [ -d "$WEBTMPDIR/logs" ] || echo "[w] Logdir $WEBTMPDIR/logs absent..?" >&2
+else
+    echo "
+Syntax: /www/MUMB/LE/utilities/ensure-fast
+  or    /www/MUMB/LE/tools/ensure-fast /www/tmp/MUMB/LE
+
+The latter is slightly faster." >&2
+    exit 1
+fi
+
+
+pidfile="$WEBTMPDIR/logs/apache2.pid"
+
+if [ -f "$pidfile" ]; then
+    pidval="$( cat "$pidfile" )"
+    run_as="$( ps -w -w -o user= -p "$pidval" )"
+    if [ "$run_as" = "$USER" ]; then
+        # Pidfile exists & points to a running process owned by us
+        # Doesn't get much better without slower checks
+        exit 0
+    fi
+fi
+
+cd "$( dirname "$0" )"
+# we may be in tools/ or utilities/
+cd ..
+echo "In $PWD, about to start because pidfile=$pidfile pidval=$pidval run_as=$run_as"
+exec utilities/start
