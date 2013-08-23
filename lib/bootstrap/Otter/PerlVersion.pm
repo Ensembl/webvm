@@ -86,7 +86,7 @@ sub selfwrap {
         local $ENV{PATH} = detaint($ENV{PATH}); # we intend not to use it, but exec insists and we don't insist $want_perl is absolute
         my @cmd = map { detaint($_) }
           ($want_perl, (map { -I => $_ } @libs), -Tw => $0, @ARGV);
-        exec @cmd;
+        { exec @cmd; }
         die "$0: Cannot find OTTER_PERL_EXE=$want_perl for\n @cmd";
     } else {
 #        warn join "\n  ", "Running under Perl $^X = $] = $^V and \@INC is", @INC;
