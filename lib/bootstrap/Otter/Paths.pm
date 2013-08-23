@@ -71,11 +71,37 @@ sub localdeps {
 
 
 sub _wantdir {
-    my ($what, @dirs) = @_;
+    my ($what, $available, @dirs) = @_;
     foreach my $dir (@dirs) {
         return $dir if -d $dir;
     }
-    die "Cannot find $what.  Looked for @dirs";
+
+    my @available; # to tell what there IS
+
+    # aliases
+    while (@$available && !ref($available->[0])) {
+        push @available, shift @$available;
+    }
+
+    # findable directories
+    my ($regex, @dir) = @$available;
+    foreach my $dir (@dir) {
+        next unless -d $dir;
+        opendir my $dh, $dir or die "opendir($dir) failed: $!";
+        my @leaf = grep { not m{^\.\.?$} } readdir $dh;
+        foreach my $leaf (@leaf) {
+            my @part = "$dir/$leaf" =~ $regex;
+            next unless @part;
+            push @available, join '', @part;
+        }
+    }
+    my %uq;
+    @uq{@available} = ();
+    @available = sort keys %uq;
+
+    $available = (@dir && $regex) ? "  Found none in (@dir) =~ $regex\n" : '';
+    $available = "  Available are (@available)\n" if @available;
+    die "Cannot find $what.\n  Looked for @dirs\n$available";
 }
 
 
@@ -90,6 +116,7 @@ sub core {
 
     my $SHARED_core = _wantdir
       ('.../SHARED_docs/lib/core',
+       [],
        localdeps().'/SHARED.core',
        '/nfs/WWWdev/SHARED_docs/lib/core',
        '/nfs/WWW/SHARED_docs/lib/core');
@@ -149,6 +176,8 @@ sub bioperl {
 
     my $bioperl = _wantdir
       ("Bioperl $vsn_short ($version)",
+       [ (map {"bioperl$_"} keys %known_vsn),
+         qr{/(bioperl)-([^/]*)$}, @deps ],
        map { "$_/bioperl-$version" } @deps);
 
     die "bioperl$vsn_short is incomplete" unless -d "$bioperl/Bio";
@@ -159,7 +188,10 @@ sub bioperl {
 sub otter {
     my ($pkg, $otter_version) = @_;
     my $otterlace_server_root = $pkg->code_root;
-    return sprintf '%s/lib/otter/%s', $otterlace_server_root, $otter_version;
+    my $libs = "$otterlace_server_root/lib/otter";
+    return _wantdir("Otter Server v$otter_version",
+                    [ qr{(otter)/(\d+)}, $libs ],
+                    "$libs/$otter_version");
 }
 
 sub code_root { # XXX:DUP Bio::Otter::Server::Config->data_dir
@@ -195,6 +227,7 @@ sub ensembl {
 
     my $ensembl_root = _wantdir
       ("Ensembl v$ensembl_version",
+       [ qr{/(ensembl)-branch-([^/]*)$}, @deps ],
        map { "$_/ensembl-branch-$ensembl_version" } @deps);
 
     my @lib = map { "$ensembl_root/$_" }
@@ -217,7 +250,7 @@ sub ensembl {
   ensembl-functgenomics/modules
     };
 
-    die "Ensembl v$ensembl_version is incomplete (@lib)"
+    die "Ensembl v$ensembl_version is missing components (@lib)"
       if grep { ! -d $_ } @lib;
 
     return @lib;
@@ -232,11 +265,12 @@ sub humpub {
 
     my $humpub = _wantdir
       ("humpub modules",
+       [],
        localdeps().'/humpub', # our local copy
        '/nfs/WWWdev/SANGER_docs/lib/humpub',
        '/nfs/WWW/SANGER_docs/lib/humpub');
 
-    die "humpub is incomplete" unless -d "$humpub/Hum";
+    die "humpub at $humpub is incomplete" unless -d "$humpub/Hum";
 
     return $humpub;
 }
