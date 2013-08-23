@@ -106,8 +106,15 @@ sub _wantdir {
 
 
 sub intweb {
+    my ($pkg, undef) = @_; # takes no version
     # no-op: intweb is a subset of core which we don't provide
     # Catching this allows other tags to be fatal
+    my ($caller_pkg) = caller(2);
+    unless ($caller_pkg =~ /^SiteDecor(::|$)/) {
+#        require Carp; Carp::cluck
+        warn
+            ("$0: $pkg tag intweb is null (from $caller_pkg)");
+    }
     return ();
 }
 
