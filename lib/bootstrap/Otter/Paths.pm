@@ -30,7 +30,7 @@ sub import {
 
     my @lib;
     foreach my $tag (@tags) {
-        if (my ($what, $vsn) = $tag =~ m{^(bioperl|core|ensembl|humpub|intweb|otter)(\d+|)$}) {
+        if (my ($what, $vsn) = $tag =~ m{^(bioperl|core|ensembl|humpub|intweb|otter)(\d+|-dev|)$}) {
             push @lib, $package->$what($vsn);
         } else {
             die "Failed to supply '$tag'";
@@ -86,9 +86,7 @@ sub _wantdir {
     # findable directories
     my ($regex, @dir) = @$available;
     foreach my $dir (@dir) {
-        next unless -d $dir;
-        opendir my $dh, $dir or die "opendir($dir) failed: $!";
-        my @leaf = grep { not m{^\.\.?$} } readdir $dh;
+        my @leaf = _readdir($dir);
         foreach my $leaf (@leaf) {
             my @part = "$dir/$leaf" =~ $regex;
             next unless @part;
@@ -102,6 +100,13 @@ sub _wantdir {
     $available = (@dir && $regex) ? "  Found none in (@dir) =~ $regex\n" : '';
     $available = "  Available are (@available)\n" if @available;
     die "Cannot find $what.\n  Looked for @dirs\n$available";
+}
+
+sub _readdir {
+    my ($dir) = @_;
+    return () unless -d $dir;
+    opendir my $dh, $dir or die "opendir($dir) failed: $!";
+    return grep { not m{^\.\.?$} } readdir $dh;
 }
 
 
@@ -196,9 +201,19 @@ sub otter {
     my ($pkg, $otter_version) = @_;
     my $otterlace_server_root = $pkg->code_root;
     my $libs = "$otterlace_server_root/lib/otter";
+    $otter_version = _otter_dev($libs) if $otter_version eq '-dev';
     return _wantdir("Otter Server v$otter_version",
                     [ qr{(otter)/(\d+)}, $libs ],
                     "$libs/$otter_version");
+}
+
+sub _otter_dev {
+    my ($libs) = @_;
+    my @vsn =
+      sort { $a <=> $b }
+        map { /^(\d{2,4})$/ ? ($1) : () } # detaint, numerics only
+          _readdir($libs);
+    return $vsn[-1];
 }
 
 sub code_root { # XXX:DUP Bio::Otter::Server::Config->data_dir
