@@ -19,6 +19,7 @@
   LD_LIBRARY_PATH=$BUILT/lib
 
   # pass only the necessary environment
+# TODO: Push environment cleaning up to APACHECTL, so it happens in production also
   APACHE2=$( echo env -i \
       PATH=$PATH \
       USER=$USER \

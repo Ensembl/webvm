@@ -353,8 +353,9 @@ Then I started replacing them with things that work.
 *** Fixmes and grubbiness that may be worth improving later
     git grep -hE '[X]XX:|[B]0RK/|[T]ODO' | sed -e 's/^[ #]*//; s/XXX/xXX/; s/[T]ODO/tODO/; s/^/  /' | LC_ALL=C sort -uf
 
-  *** tODO tell CGI scripts when request is internal
-  *** tODO trigger DEVEL mode
+  *** tODO avoid tripping Bio::Otter::Git up, by deploying via a git repo
+  *** tODO rescue content from intweb
+  *** tODO Set MaxClients in conf/extra/httpd-mpm.conf
   /ServerRoot_B0RK/error/include/ files and copying them to /your/include/path/, 
   <Directory "/ServerRoot_B0RK/cgi-bin">
   <Directory "/ServerRoot_B0RK/error">
@@ -382,7 +383,11 @@ Then I started replacing them with things that work.
   SSLMutex  "file:/ServerRoot_B0RK/logs/ssl_mutex"
   SSLSessionCache         "dbm:/ServerRoot_B0RK/logs/ssl_scache"
   SSLSessionCache        "shmcb:/ServerRoot_B0RK/logs/ssl_scache(512000)"
+  sub code_root { # xXX:DUP Bio::Otter::Server::Config->data_dir
+  tODO: Push environment cleaning up to APACHECTL, so it happens in production also
   TransferLog "/ServerRoot_B0RK/logs/access_log"
+  xXX: something smarter, based on designations.txt ?
+  xXX:DUP from APACHECTL
   xXX:UBUNTU GNU-ism.
 
 *** TODO Set MaxClients in conf/extra/httpd-mpm.conf
