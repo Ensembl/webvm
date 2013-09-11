@@ -1,0 +1,26 @@
+#! /bin/sh
+
+set -e
+cd "$WEBDIR"
+
+in_dir="$1"
+shift
+git_op="$2"
+
+case "$in_dir" in
+    /*|*..*)
+        echo "Give working directory spec relative to $WEBDIR" >&2
+        exit 3
+        ;;
+esac
+
+if [ -n "$in_dir" ] && [ -d "$in_dir/.git" ] && [ -O "$in_dir/.git" ] && [ -n "$*" ]; then
+    # OK
+    cd "$in_dir"
+    exec git "$@"
+fi
+
+printf "Syntax: utilities/git-in <dir> <git-op> <args>*\n
+Where dir should be one of\n"
+find . -depth -name .git -type d -printf "  %h\n"
+exit 4
