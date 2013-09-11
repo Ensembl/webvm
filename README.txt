@@ -316,15 +316,11 @@ time.
 As in "source APACHECTL.$(hostname -s).sh"
 or something more generalised for a class of machines,
 possibly also providing the notion of dev/live
-*** TODO trigger DEVEL mode
-based on what,
- the hostname?
- (untracked or locally modified) config file?
- being a user not www-anacode?
-
-It may be set manually with WEBDEFS=DEVEL
-
-The mca/deskpro branch sets it in the hooked environment setup.
+*** DONE trigger DEVEL mode
+This is done by supplying WEBDEFS=DEVEL
+either from the calling environment directly
+or via a shell fragment at setup/APACHECTL.sh - which should exist
+only on developers' branches, e.g.  mca/deskpro .
 *** TODO How do we get HTTP_CLIENTREALM set?                        :webteam:
 It seems to be passed down from the ZXTM front end proxy, as the
 Clientrealm: HTTP header.
