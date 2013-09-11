@@ -312,29 +312,30 @@ localhost should work.)
 Symptoms are repeatedly asking for the password, getting 200 OK each
 time.
 ** Open questions
-*** TODO Do we want host-dependent environment setup?
+*** DONE Do we want host-dependent environment setup?
 As in "source APACHECTL.$(hostname -s).sh"
 or something more generalised for a class of machines,
 possibly also providing the notion of dev/live
+
+See commits eadc4d27 ("wrapper script config for webteam standard
+VMs", adding www-dev.sh) and 13d197ce (rename to setup/www-dev.sh)
+
+The recipe matches that used by the webteam, e.g. for detecting run in
+/www/www-live
 *** DONE trigger DEVEL mode
 This is done by supplying WEBDEFS=DEVEL
 either from the calling environment directly
 or via a shell fragment at setup/APACHECTL.sh - which should exist
 only on developers' branches, e.g.  mca/deskpro .
-*** TODO How do we get HTTP_CLIENTREALM set?                        :webteam:
-It seems to be passed down from the ZXTM front end proxy, as the
+*** DONE How do we get HTTP_CLIENTREALM set?                        :webteam:
+It is passed down from the ZXTM front end proxy, as the
 Clientrealm: HTTP header.
 
-SangerWeb.pm (& related) expect it, as does B:O:SSS
+SangerWeb.pm (& related) expect it, and it is used (only by testing
+for qr/sanger/) in parts of ensembl-otter.
 
-What are the possible values and what do they mean?
-
-To what should this be set, when absent?  Presumably a direct
-(non-zxtm) connection is from inside?
-
-On developers' apache configs, for now, HTTP_CLIENTREALM should be set
-by hand in apps/DEVEL_OTTER.conf. E.g.:
-    SetEnv HTTP_CLIENTREALM sanger,bogus_from_DEVEL_otter_conf
+On developers' apache configs, for now, HTTP_CLIENTREALM can be set by
+including "lib/devstubs" on OTTER_PERL_INC.  See commit 312b916f .
 
 ** ServerConf/conf/ contents
 *** What is /ServerRoot_B0RK ?
