@@ -1,0 +1,109 @@
+#! /usr/bin/perl -T
+use strict;
+use warnings;
+
+use CGI;
+use Sys::Hostname 'hostname';
+use Digest::SHA 'sha1';
+use File::Temp 'tempfile';
+
+=head1 NAME
+
+crontab (CGI) - decide whether the crontab(5) is correct
+
+=head1 DESCRIPTION
+
+Generates and compares (but does not install) crontab.
+
+=head1 AUTHOR
+
+mca@sanger.ac.uk
+
+=cut
+
+
+sub main {
+    my $op;
+    if (@ARGV) {
+        $op = shift @ARGV;
+    } else {
+        my $cgi = CGI->new;
+        $op = $cgi->path_info;
+        $op =~ s{^/}{};
+    }
+
+    if ($op eq '') {
+        my ($leaf) = $0 =~ m{([-a-z0-9]+)$}
+          or die "Cannot get leaf from $0";
+        my $ops = join '', map {qq{  <li><a href="crontab/$_">$_</a></li>\n}}
+          qw{ want got diff };
+        print qq{Content-type: text/html\n\n
+<html><body><h1>Crontab tool</h1>
+<ul>
+$ops
+</ul>
+</body></html>\n};
+    } else {
+        $| = 1;
+        print "Content-type: text/plain\n\n";
+        $SIG{__DIE__} = sub { my ($err) = @_; print $err; die $err };
+        $ENV{PATH} = '/bin:/usr/bin';
+        my $want = invent_crontab();
+
+        if ($op eq 'want') {
+            print $want;
+        } elsif ($op eq 'got') {
+            exec "/usr/bin/crontab", "-l";
+            die "exec crontab -l: $!";
+        } elsif ($op eq 'diff') {
+            my ($fh, $tmpfn) = tempfile('crontab-cgi.XXXXXX',
+                                        UNLINK => 1, TMPDIR => 1);
+            print {$fh} $want or die "Write tmpfile: $!";
+            close $fh or die "Close tmpfile: $!";
+            system("/usr/bin/crontab -l | /usr/bin/diff -u - $tmpfn");
+            print "# Diff exit code $?\n";
+        } else {
+            die "Bad op '$op'";
+        }
+    }
+
+    return 0;
+}
+
+
+sub invent_crontab {
+    my $hostname = hostname();
+
+    # What am I?
+    my $user = getpwuid($<);
+    my $live = $hostname =~ m{^web-\w+(staging|live)-?\d+($|\.)};
+    my $dlu;
+    if ($user eq 'www-core') {
+        $dlu = $live ? 'www-live' : 'www-dev';
+    } else {
+        # sandbox
+        $dlu = '$LOGNAME/www-dev'; # literal variable name
+    }
+
+    # Phase the crontab across hosts
+    my ($shhost) = $hostname =~ m{^([^.]+)}
+      or die "Can't get short hostname from $hostname";
+    my $hostnum = unpack('N', sha1($shhost));
+
+    my $perfive = join ',', map { $_ * 5 + ($hostnum % 5) } (0..11);
+    my $hrly_min = $hostnum % 60;
+
+    return <<"TXT";
+# m h  dom mon dow   command
+
+\@reboot        /www/$dlu/utilities/start
+# DNW due to LDAP not coming up before crond
+
+$perfive *   * * *   /www/$dlu/tools/ensure-fast /www/tmp/$dlu
+
+$hrly_min 21   * * Sun /www/$dlu/utilities/rotate
+TXT
+}
+
+
+exit main();
