@@ -428,3 +428,78 @@ Otterlace builds could be reset by
  b) rewind the branch on intcvs1 to master or $USER/master
 
  c) have the deployment scripts accept forced updates
+
+* Installation to sandbox
+** Install Apache config and tools
+ ssh web-ottersand-01
+ cd /www/$USER
+
+ ls -lart www-dev # should be empty
+ git clone intcvs1:/repos/git/anacode/webvm.git www-dev
+ # you have an Apache which knows the port it should use
+
+ cd www-dev
+ utilities/start
+ # Apache should now be running
+
+The webteam have various tools in utilities, of which we need a few.
+
+** Find it
+ MY_PORT=$( grep Listen ServerRoot/conf/user/$USER.conf | cut -f2 -d' ' )
+ http://web-ottersand-01.internal.sanger.ac.uk:$MY_PORT/ which is visible at
+ http://$USER-otter.sandbox.sanger.ac.uk/ via the front-end proxy (ZXTM)
+
+The two are equivalent, except that the latter goes through the ZXTM.
+This means
+
++ the client IP is in a different variable
++ the URLs /server-status and /server-info will give zero-sized reply
++ HTTP_CLIENTREALM will be set, which is needed for authentication
+
+** Install crontab
+ http://$USER-otter.sandbox.sanger.ac.uk/cgi-bin/crontab
+ should now show links to three operations
+
+ wget -q -O- --no-proxy http://localhost:$MY_PORT/cgi-bin/crontab/want | crontab
+
+Now you have logrotation and automatic restarts.
+
+** Supply other repositories
+ git clone intcvs1:/repos/git/anacode/server-config.git data/otter
+ (cd apps; git clone intcvs1:/repos/git/anacode/webvm-deps.git)
+
+The toplevel has an idea of what commitid should be HEAD in
+apps/webvm-deps but it regards data/otter as cruft.  This arose
+because one should be fairly stable while the other is likely to
+update frequently.
+
+XXX: how to address this inconsistency?
+
+*** Testing with server-config.git
+This is documented in more detail at
+  http://mediawiki.internal.sanger.ac.uk/index.php/Otter_Server_configuration#Testing_your_work_before_pushing
+
+The "front door" to testing incomplete server-config files is with
+client url=http://mca-otter.sandbox.sanger.ac.uk/cgi-bin/otter~mca or
+similar.
+
+mca-otter defines the Otter Server while ~mca defines the
+server-config, or that part of it which is checked out while taking
+the remainder from data/otter.
+
+See cgi-bin/otter~mca/$NN/test near "Server::Config" for an
+explanation of what config is being used.
+
+
+data/otter may instead be a symlink to something else.  Note that the
+Otter Server requires that HEAD be the dev or live branch, or an
+equivalent.
+
+** Supply Otter Server
+Copy in cgi-bin/otter/$NN/ and lib/otter/$NN/ as usual.
+
+The script otter_server_build.sh at the top of webvm.git may help, but
+this is a work-in-progress and should probably move to a better place.
+
+mca also has an unpushed component in ensembl-otter called "shove"
+which will send the development clone to otter_server_build.sh
