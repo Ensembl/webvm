@@ -430,6 +430,12 @@ Otterlace builds could be reset by
  c) have the deployment scripts accept forced updates
 
 * Installation to sandbox
+Each developer has a "sandbox" Apache server, in which Otter Server
+versions can be installed as necessary.
+
+Note that this setup should also run on a deskpro or any laptop.
+See "git diff master mca/deskpro" on webvm.git for clues.
+
 ** Install Apache config and tools
  ssh web-ottersand-01
  cd /www/$USER
@@ -443,6 +449,9 @@ Otterlace builds could be reset by
  # Apache should now be running
 
 The webteam have various tools in utilities, of which we need a few.
+
+** Tail the logfiles
+ tail -F /www/tmp/$USER/www-dev/logs/*log
 
 ** Find it
  MY_PORT=$( grep Listen ServerRoot/conf/user/$USER.conf | cut -f2 -d' ' )
@@ -503,3 +512,29 @@ this is a work-in-progress and should probably move to a better place.
 
 mca also has an unpushed component in ensembl-otter called "shove"
 which will send the development clone to otter_server_build.sh
+
+* Installation to dev
+The details are likely to change rapidly 2013-09 .. 2013-10.
+
+There is one dev server URL, so it is shared across the team.
+
+** Which dev server
+Currently, there is only one dev server (web-otterdev-01) and no
+staging or live servers.
+
+
+Operations on dev, staging and live servers are mediated with ssh key
+pairs.  See team_tools.git bin/smithssh for details and useful calls.
+
+There is a wrapper on top of that, to copy the legacy Otter Servers
+into web-otterdev-01.  See team_tools.git bin/pubweblish for details.
+
+** Tail the logfiles
+The logfiles are in /www/tmp/www-dev/logs/*log which may be reached by
+ssh to the box.
+
+More convenient is
+
+ smithssh web-otterdev-01 utilities/taillog -h
+
+Option -b is broken, pending RT#353732.
