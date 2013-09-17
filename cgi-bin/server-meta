@@ -1,4 +1,4 @@
-#! /usr/bin/env perl
+#! /usr/bin/perl -T
 use strict;
 use warnings;
 use English qw(-no_match_vars $INPUT_RECORD_SEPARATOR);
@@ -8,7 +8,7 @@ use YAML 'Dump';
 
 =head1 NAME
 
-tools/servers - return list of valid webservers
+cgi-bin/server-meta - return info about webserver(s)
 
 =head1 DESCRIPTION
 
@@ -26,6 +26,7 @@ sub main {
 
     my $out = config_extract($cfg);
 
+    print "Content-type: text/plain\n\n";
     print Dump($out);
 
     return 0;
