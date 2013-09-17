@@ -5,6 +5,11 @@ use English qw(-no_match_vars $INPUT_RECORD_SEPARATOR);
 use YAML::Loader;
 use YAML 'Dump';
 
+use Try::Tiny;
+use File::Slurp 'slurp';
+use Sys::Hostname 'hostname';
+use Time::HiRes qw( tv_interval gettimeofday );
+
 
 =head1 NAME
 
@@ -22,12 +27,27 @@ sub main {
     $ROOT_PATH = '/www/utilities'; # will only work on webteam VMs
     $service_key = 'otter';
 
-    my $cfg = get_configuration();
+    # Guard for overload
+    my @load = (split /\s+/, slurp('/proc/loadavg'))[0,1,2]; # 1min, 5min, 15min
+    if (grep { $_ >= 2 } @load) {
+        print "Status: 503 Service Unavailable\nContent-type: text/plain\n\nToo busy\n";
+        print Dump({ load => \@load });
+        return 0;
+    }
 
-    my $out = config_extract($cfg);
+    # Generate details
+    my $t0 = [ gettimeofday() ];
+    my %out =
+      (svn_config => (try { config_extract( get_configuration() ) } catch { "ERR:$_" }),
+       hostname => hostname(),
+       load => \@load,
+       instances => servers_here(),
+       t0 => $^T,
+      );
+    $out{t_run} = tv_interval($t0);
 
     print "Content-type: text/plain\n\n";
-    print Dump($out);
+    print Dump(\%out);
 
     return 0;
 }
@@ -69,6 +89,55 @@ sub config_extract { # by inspection of /www/utilities/config/scp.yaml v195
     }
 
     return \@out;
+}
+
+
+sub servers_here {
+    # List procs
+    local $ENV{PATH} = '/bin:/usr/bin';
+    my $pid = open my $fh, '-|', ('ps', '-eo', 'pid,ppid,user,cmd')
+      or die "Pipe from ps failed: $!";
+    my @ln = <$fh>;
+    close $fh
+      or die "Pipe from ps closed: $! / $?";
+    foreach (@ln) { s/^\s+|\s+$//g }
+    my @hdr = split /\s+/, shift @ln;
+    my @proc = map {[ split /\s+/, $_, scalar @hdr ]} @ln;
+
+    # Find Apache process groups in our style
+    my $webvm_style =
+      qr{
+            ^/\S*/s?bin/(?:apache2|httpd)\b # webserver
+            .*\s+(?:-f\s*)?                 # space or config mark
+            (/[-_.a-zA-Z0-9/]+)             # capture directory part = webdir
+            /ServerRoot/conf/httpd\.conf\b  # webvm-style config
+    }x;
+    my @webvm # [ pid, ppid, user, cmd, webdir ]
+      = map { $_->[3] =~ $webvm_style ? ([ @$_, $1 ]) : () } @proc;
+
+    # Exclude child processes
+    my %pid;
+    @pid{ map { $_->[0] } @webvm } = ();
+    @webvm = grep { !exists $pid{ $_->[1] } } @webvm;
+
+    # Get details
+    @webvm = map { instance_detail(@$_) } @webvm;
+
+    return \@webvm
+}
+
+sub instance_detail {
+    my ($pid, undef, $user, $cmd, $webdir) = @_;
+
+    # Look up port number
+    my $fn = "$webdir/ServerRoot/conf/user/$user.conf";
+    die "webvm.git config assumptions turned out to be broken" unless -f $fn;
+    my @ucfg = slurp($fn);
+    my @port = map { m{^Listen\s+(\d+)\s*$} ? ($1) : () } @ucfg;
+    die "Can't get port for $user in $webdir" unless 1 == @port;
+
+    return { user => $user, pid => $pid, cmd => $cmd,
+             webdir => $webdir, port => $port[0] };
 }
 
 
