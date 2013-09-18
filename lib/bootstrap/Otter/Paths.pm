@@ -266,7 +266,6 @@ sub ensembl {
   ensembl-draw/modules
   ensembl-variation/modules
   ensembl-compara/modules
-  modules
   ensembl-external/modules
   ensembl/modules
   ensembl-functgenomics/modules
