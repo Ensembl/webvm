@@ -54,6 +54,12 @@ require Otter::Paths;
 sub import {
     my ( $package, @tags ) = @_;
 
+    if ($ENV{APACHE_DEVEL}) {
+        # System load debugging
+        # Probably not needed when SangerPaths gone
+        require Otter::LoadReport;
+    }
+
     return Otter::Paths->import(@tags);
 }
 
