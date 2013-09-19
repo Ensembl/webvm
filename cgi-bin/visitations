@@ -1,0 +1,205 @@
+#! /usr/bin/perl -T
+use strict;
+use warnings;
+
+use XML::RSS;
+use DateTime::Format::W3CDTF;
+use Sys::Hostname 'hostname';
+
+=head1 NAME
+
+cgi-bin/visitations - report non-HTTP interactions with machine
+
+=head1 DESCRIPTION
+
+Generate an RSS feed containing the union of
+
+=over 4
+
+=item * local standard ssh key authorized interactions
+
+=item * last(1) output
+
+=back
+
+=head1 CAVEATS
+
+This is tied to Linux L<last(1)> and webteam logging formats.
+
+=cut
+
+sub main {
+    my $n = 50;
+
+    my @visit =
+      (collect_last($n),
+       collect_logged($n, '/www/tmp/restricted-scp.log'),
+       collect_logged($n, '/www/tmp/server-actions.log'));
+
+    print "Content-type: text/xml\n\n";
+    print rssify(@visit)->as_string;
+
+    return 0;
+}
+
+
+sub rssify {
+    my @item = @_;
+    my $rss = XML::RSS->new (version => '2.0');
+
+    my $host = hostname();
+    $rss->channel
+      (title => "Visits to $host",
+       docs => 'http://git.internal.sanger.ac.uk/cgi-bin/gitweb.cgi?p=anacode/webvm.git;a=history;f=cgi-bin/visitations;hb=HEAD',
+       description => 'Record of connections potentially making changes',
+      );
+
+
+    foreach my $ch (sort __DT_sort @item) {
+        my ($when, $who, $op, $detail) = @$ch;
+        my $date = ref($when) ? $when : DateTime->from_epoch(epoch => $when);
+        $date = DateTime::Format::W3CDTF->new->format_datetime($date);
+        $rss->add_item
+          (title => "$who: $op",
+           description => $detail,
+           pubDate => $date);
+    }
+
+    return $rss;
+}
+
+sub __DT_sort {
+    return ( (ref($b->[0]) ? $b->[0]->epoch : $b->[0])
+             <=>
+             (ref($a->[0]) ? $a->[0]->epoch : $a->[0]) );
+}
+
+
+sub pipefrom {
+    my @cmd = @_;
+    local $ENV{PATH} = '/bin:/usr/bin';
+    my $pid = open my $fh, '-|', @cmd
+      or die "Fork pipe from @cmd: $!";
+    my @ln = <$fh>;
+    close $fh
+      or die "Close pipe from @cmd: $! / $?";
+    return wantarray ? @ln : join '', @ln;
+}
+
+my $LAST_DATE_RE = qr{(\w{3}) (\w{3}) ([ 0-9]\d) (\d{2}):(\d{2}):(\d{2}) (\d{4})};
+sub collect_last {
+    my ($n) = @_;
+    my @out; # ( [$when, $who, $op, $detail] ... )
+
+    local $ENV{LANG} = 'C'; # doesn't make any difference right now...
+    my @ln = pipefrom(qw( last -Fawx ), "-n$n");
+    chomp @ln;
+
+    # Use the footer
+    my $begin = pop @ln;
+    if (my @dt = $begin =~ m{^wtmp begins (?:$LAST_DATE_RE)$}) {
+        push @out, [ _last_date(@dt), wtmp => 'wtmp begins', $begin ];
+    } else {
+        die "Misformat? begin=$begin";
+    }
+
+    die "Misformat?  Last line '$ln[-1]'" unless $ln[-1] eq '';
+    pop @ln;
+
+    # Convert the rows
+    foreach my $ln (@ln) {
+        my ($user, $tty,
+            $in, $sep, $out,
+            $dur, $detail) = _last_cols($ln, qw( 9 22 47 48 73 87 ));
+        # $out in ('gone - no logout', 'down', 'crash', $datetime)
+        if ($tty =~ m{^\(to lvl \d\)$|^system } ||
+            $user =~ m{^(runlevel|reboot|shutdown)$}) {
+            # non-user
+            push @out, [ _last_date($user => $in), 'OS', $user, $ln ];
+        } else {
+            push @out, [ _last_date(login => $in), $user, login => $ln ];
+            push @out, [ _last_date(logout => $out), $user, logout => $ln ]
+              if $out =~ $LAST_DATE_RE;
+        }
+    }
+
+    return @out;
+
+#  mca      pts/1        Fri Sep 13 14:47:58 2013 - Fri Sep 13 14:48:06 2013  (00:00)     deskpro21743.internal.sanger.ac.uk
+#  runlevel (to lvl 2)   Thu Sep 12 16:52:43 2013 - Thu Sep 19 12:12:12 2013 (6+19:19)    3.2.0-53-virtual
+#  reboot   system boot  Thu Sep 12 16:52:43 2013 - Thu Sep 19 12:12:12 2013 (6+19:19)    3.2.0-53-virtual
+#  shutdown system down  Thu Sep 12 16:52:33 2013 - Thu Sep 12 16:52:43 2013  (00:00)     3.2.0-48-virtual
+#  
+#  wtmp begins Thu Sep 12 10:52:15 2013
+}
+
+my %MONTH;
+@MONTH{qw{ Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec }} = (1..12);
+sub _last_date {
+    my @dt = @_;
+    if (2 == @dt) {
+        my ($what, $dt) = @_;
+        @dt = $dt =~ $LAST_DATE_RE
+          or die "_last_date($what) cannot read '$dt'";
+    }
+    my ($dow, $mon, $dd, $H, $M, $S, $yr) = @dt;
+
+    my $mm = $MONTH{$mon}
+      or die "Bad date '@dt' from last(1)";
+
+    return DateTime->new(year => $yr, month => $mm, day => $dd+0,
+                         hour => $H, minute => $M, second => $S);
+}
+
+sub _last_cols {
+    my ($txt, @col) = @_;
+    my @out;
+    unshift @col, 0;
+    push @col, length($txt);
+    for (my $i=0; $i<$#col; $i++) {
+        $out[$i] = substr($txt, $col[$i], $col[$i+1] - $col[$i]);
+    }
+    foreach (@out) { s/^\s+|\s+$//g } # trim-LR
+    return @out;
+}
+
+
+sub collect_logged {
+    my ($n, $fn) = @_;
+    return () unless -f $fn;
+
+    my @out;
+    foreach my $ln (pipefrom( tail => "-n$n", $fn )) {
+        chomp $ln;
+        my ($dt, $user, $cmd) = $ln =~
+          m{^At:\s*(\d{4}-\d{2}-\d{2} [0-9:]{8});\s*By:\s*(\S+)\s*;\s*(.*)$};
+        if (!defined $dt) {
+            warn "$0 on $fn: Reject '$ln'\n";
+        } else {
+            my %dt;
+            @dt{qw{ year month day hour minute second }} = split /[- :]/, $dt;
+            my ($op) = $cmd =~ m{^(\S+)(?:\s|$)};
+            $op = '???' unless defined $op;
+            push @out, [ DateTime->new(%dt), $user, $op,
+                         "$cmd\n\nin $fn" ];
+        }
+    }
+#At: 2013-05-30 14:19:15; By: mca       ; /bin/ls -l /www/www-dev
+#At: 2013-06-27 17:07:12; By: mca       ; /bin/ls -l /www/www-dev
+#At: 2013-08-27 16:28:24; By: mca       ; /bin/ls /www/www-dev
+
+#At: 2013-05-30 14:04:23; By: mca       ; /www/www-dev/utilities/taillog 
+#At: 2013-06-12 10:38:53; By: nb5       ; /www/www-dev/utilities/start
+
+    return @out;
+}
+
+
+sub collect {
+    return ([ time() - 3600, mca => 'stuff', 'did some stuff' ],
+            [ time() - 60, mca => 'blah', "also the blah\nseveral of them\n" ],
+            [ time() - 7200, jh13 => 'etc', 'various' ],
+           );
+}
+
+exit main();
