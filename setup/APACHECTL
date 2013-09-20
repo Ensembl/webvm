@@ -45,8 +45,8 @@ WEBTEAM_TYPE="$( perl -e 'print "$1\n" if (shift) =~ m{^/www(?:/[a-z0-9]+)?/(www
 if [ -f "$WEBDIR/setup/APACHECTL.sh" ]; then
     # Some user-specific config brought onto this branch.
     # Takes precedence over WEBTEAM_TYPE
-    echo "[d] source $WEBDIR/APACHECTL.sh"
-    . "$WEBDIR/APACHECTL.sh"
+    echo "[d] source $WEBDIR/setup/APACHECTL.sh"
+    . "$WEBDIR/setup/APACHECTL.sh"
 elif [ -n "$WEBTEAM_TYPE" ]; then
     # Standard configs for www-dev, www-live when running from their
     # normal location
