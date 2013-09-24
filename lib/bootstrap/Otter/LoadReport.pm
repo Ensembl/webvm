@@ -8,7 +8,8 @@ Otter::LoadReport - write load average to error_log
 
 =head1 DESCRIPTION
 
-Record system load and script runtime in the Apache error_log.
+Record system load, memory info and script runtime in the Apache
+error_log.
 
 =head2 Caveat
 
@@ -21,6 +22,8 @@ when load is heavy.
 
 use File::Slurp qw( slurp );
 use Time::HiRes qw( tv_interval gettimeofday );
+use Try::Tiny;
+
 
 sub loadavg {
     # Linux only
@@ -28,20 +31,35 @@ sub loadavg {
     return @load;
 }
 
+sub run_ps {
+    return try {
+        local $ENV{PATH} = '/bin:/usr/bin';
+        my ($r, $v) =
+          map { int($_ / 1024 + 0.5) }
+            split /\s+/, qx{ ps -o rss= -o vsz= $$ };
+        return "(rss:${r} vsz:${v})MiB";
+    } catch {
+        return "fail:$_";
+    };
+}
+
 my $t;
 sub show {
     my ($when) = @_;
 
     my @load = loadavg();
-    my @out = ("loadavg (@load)");
+    my @out = (pid => $$, "loadavg (@load)");
 
     if ($t) {
         my @cpu = times();
-        push @out, (wallclock => tv_interval($t), "cpu (@cpu)");
+        push @out,
+          (wallclock => sprintf("%.2fs", tv_interval($t)),
+           "cpu (@cpu)s",
+           ps => run_ps());
     }
     $t ||= [ gettimeofday() ];
 
-    print STDERR "$ENV{SCRIPT_NAME} pid=$$ $when: @out\n";
+    print STDERR "$ENV{SCRIPT_NAME} $when: @out\n";
 
     return;
 }
