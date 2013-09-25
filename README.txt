@@ -538,3 +538,25 @@ More convenient is
  smithssh web-otterdev-01 utilities/taillog -h
 
 Option -b is broken, pending RT#353732.
+
+* Sizing of machines
+** Legacy service, 2013-09-25
+| Service   | Host          | Cores | CPU type     | Bogomips/CPU | RAM/GiB |
+|-----------+---------------+-------+--------------+--------------+---------|
+| intwebdev | webdev2       |     4 | Opteron 2218 |         5200 |      14 |
+|           | webdev3       |     4 | Opteron 2218 |         5200 |      14 |
+|-----------+---------------+-------+--------------+--------------+---------|
+| intweb    | web-wwwold-01 |     1 | Xeon X5670   |         5900 |       8 |
+|           | web-wwwold-02 |     1 | Xeon E5504   |         4000 |       8 |
+|-----------+---------------+-------+--------------+--------------+---------|
+| dev       | webdev2       |       |              |              |         |
+|           | webdev3       |       |              |              |         |
+|-----------+---------------+-------+--------------+--------------+---------|
+| www       | web-wwwold-01 |       |              |              |         |
+|           | web-wwwold-02 |       |              |              |         |
+
+** Virtual machines, 2013-09-25
+| Service | Host             | Cores | CPU type   | Bogomips/CPU | RAM/GiB |
+|---------+------------------+-------+------------+--------------+---------|
+|         | web-ottersand-01 |     2 | Xeon X5670 |         5900 |       1 |
+|         | web-otterdev-01  |     2 | Xeon X5670 |         5900 |       1 |

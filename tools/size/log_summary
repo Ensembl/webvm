@@ -1,0 +1,160 @@
+#! /usr/bin/perl -T
+use strict;
+use warnings;
+use Date::Parse;
+use YAML 'Dump';
+
+
+sub main {
+    die "Syntax: $0 <error_log>+\n\nOutput stats written by Otter::LoadReport\n"
+      unless @ARGV;
+
+# [Wed Sep 25 09:32:26 2013] [error] [client 193.62.203.125] /cgi-bin/otter~mca/76/authenticate_me BEGIN: pid 28347 loadavg (0.13 0.08 0.05)
+# [Wed Sep 25 09:32:28 2013] [error] [client 193.62.203.125] /cgi-bin/otter~mca/76/authenticate_me END: pid 28347 loadavg (0.13 0.08 0.05) wallclock 1.51s cpu (0.21 0.03 0 0)s ps (rss:19 vsz:86)MiB
+
+    my %load; # peak load at time - key = unixtime, value = peak [ 1, 5, 15 ]
+    my %concurrency; # apparent concurrent usage at time - key = unixtime, value = [ \@procs ]
+    my %proc; # concurrent procs - key = pid, value = AdHoc::Proc
+    while (<>) {
+        chomp;
+        my ($dt, $script, $when, $info) =
+          m{^\[([^[\]]+ \d{4})\] [a-z0-9.[\] ]+ (/cgi-bin\S+) (BEGIN|END): (.*)$}
+            or next;
+        my $utime = str2time($dt)
+          or die "$ARGV:$.: Date parse ($dt) failed\n";
+
+        # ignore logs before deployment of compatible Otter::LoadReport
+        next unless $utime >= 1380026270;
+
+        my ($pid) = $info =~ m{^pid (\d+) }
+          or die "$ARGV:$.: No pid ($_)\n";
+        my @loadavg = $info =~ m{ loadavg \(([0-9.]+) ([0-9.]+) ([0-9.]+)\)(?: |$)}
+          or die "$ARGV:$.: No loadavg ($_)\n";
+
+        load_peak(\$load{$utime}, @loadavg);
+        if ($when eq 'BEGIN') {
+            if ($proc{$pid}) {
+                warn "$ARGV:$.: Multiple occupancy for pid $pid - evicting abended $proc{$pid}\n";
+            }
+            $proc{$pid} = AdHoc::Proc->new(pid => $pid, begun => $utime);
+        } elsif ($when eq 'END') {
+            if (!$proc{$pid}) {
+                warn "$ARGV:$.: Unregistered pid $pid - ignoring END\n";
+                next;
+            }
+            push @{ $concurrency{$utime} }, [ values %proc ];
+            my $proc = delete $proc{$pid};
+            $proc->finished($utime, $info);
+        } else { die "$when when?" }
+    }
+
+    foreach my $stale_proc (values %proc) {
+        warn "$ARGV:end: Stale proc $stale_proc (no END seen)\n";
+    }
+
+    my %peak; # peak apparent usage at time - key = unixtime, value = AdHoc::Usage
+    while (my ($t, $v) = each %concurrency) {
+        my @concurrent = @$v;
+        my @usage = map { AdHoc::Usage->sum_new(@$_) } @concurrent;
+        $peak{$t} = AdHoc::Usage->peak_new(@usage);
+    }
+    my $peaku = AdHoc::Usage->peak_new(values %peak);
+    while (my ($t, $load) = each %load) {
+        $peak{$t} = [ $peak{$t}, "load1 $load->[0]" ];
+    }
+
+    print Dump({ load => \%load, concurrency => \%concurrency,
+                 peak_usage_load_at_time => \%peak,
+                 PEAK_USAGE => $peaku });
+
+    return 0;
+}
+
+sub load_peak {
+    my ($slotref, @load) = @_;
+    my $p = $$slotref ||= [0, 0, 0];
+    foreach my $i (0, 1, 2) {
+        $p->[$i] = $load[$i]
+          if $p->[$i] < $load[$i];
+    }
+    return;
+}
+
+
+
+package AdHoc::Usage;
+use Moose;
+
+has wall => (is => 'rw', isa => 'Num'); # wallclock seconds
+has [qw[ user sys cuser csys ]] => (is => 'rw', isa => 'Num'); # cpusec times()
+has [qw[ rss vsz ]] => (is => 'rw', isa => 'Int'); # MiB
+has typ => (is => 'rw', isa => 'Str');
+has N => (is => 'rw', isa => 'Int'); # number of inputs
+
+sub parse_new { # class method
+    my ($pkg, $info) = @_;
+    # info like "pid 28347 loadavg (0.13 0.08 0.05) wallclock 1.51s cpu (0.21 0.03 0 0)s ps (rss:19 vsz:86)MiB"
+
+    my ($w, @cpu) = $info =~
+      m{ wallclock ([0-9.]+)s cpu \(([0-9.]+) ([0-9.]+) ([0-9.]+) ([0-9.]+)\)s }
+        or die "Cannot parse info '$info' for wallclock,cpu";
+    my ($rss, $vsz) = $info =~ m{ ps \(rss:(\d+) vsz:(\d+)\)MiB$}
+      or die "Cannot parse info '$info' for ps";
+
+    my %info = (wall => $w, rss => $rss, vsz => $vsz, typ => 'parsed', N => 1);
+    @info{qw{ user sys cuser csys }} = @cpu;
+
+    return $pkg->new(%info);
+}
+
+sub sum_new { # class method
+    my ($pkg, @obj) = @_;
+    my $out = $pkg->new(typ => 'sum');
+    foreach my $obj (@obj) {
+        $obj = $obj->usage if $obj->can('usage'); # unpack Proc
+        foreach my $prop (qw( wall user sys cuser csys rss vsz N )) {
+            $out->$prop(  ($out->$prop || 0) + $obj->$prop );
+        }
+    }
+    return $out;
+}
+
+sub peak_new { # class method
+    my ($pkg, @obj) = @_;
+    my $out = $pkg->new(typ => 'peak');
+    foreach my $obj (@obj) {
+        $obj = $obj->usage if $obj->can('usage'); # unpack Proc
+        foreach my $prop (qw( wall user sys cuser csys rss vsz N )) {
+            my $v = $obj->$prop;
+            next unless defined $v;
+            $out->$prop($v) if $v > ($out->$prop || 0);
+        }
+    }
+    return $out;
+}
+
+
+package AdHoc::Proc;
+use Moose;
+# some diagnostic messages assume we can usefully stringify, but we
+# don't do that yet
+
+has pid => (is => 'rw', isa => 'Int');
+has begun => (is => 'rw', isa => 'Int'); # unixtime
+
+has ended => (is => 'rw', isa => 'Int'); # unixtime
+has usage => (is => 'rw', isa => 'AdHoc::Usage');
+
+sub finished {
+    my ($self, $utime, $info) = @_;
+    my $u = AdHoc::Usage->parse_new($info);
+    $self->usage($u);
+    $self->ended($utime);
+    return;
+}
+
+1;
+
+
+package main;
+exit main();
