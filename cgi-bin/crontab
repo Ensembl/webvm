@@ -38,10 +38,17 @@ sub main {
         my $ops = join '', map {qq{  <li><a href="crontab/$_">$_</a></li>\n}}
           qw{ want got diff };
         print qq{Content-type: text/html\n\n
-<html><body><h1>Crontab tool</h1>
+<html>
+<head>
+ <title> crontab tool </title>
+ <style type="text/css"> pre { border: thin black dotted; padding: 1ex } </style>
+</head>
+<body><h1>Crontab tool</h1>
 <ul>
 $ops
 </ul>
+<h2> Install with </h2>
+<pre> wget -q -O- --no-proxy http://localhost:$ENV{SERVER_PORT}$ENV{REQUEST_URI}/want | crontab </pre>
 </body></html>\n};
     } else {
         $| = 1;
