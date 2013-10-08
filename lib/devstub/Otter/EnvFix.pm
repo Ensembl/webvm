@@ -37,9 +37,14 @@ sub import {
 
     # Feed some bogus-but-safe authentication info to SangerWeb
     # (provided in sibling file) and Bio::Otter::ServerScriptSupport
-    $ENV{BOGUS_AUTH_USERNAME} = (getpwuid($<))[0].'@fake.sangerweb';
+    #
+    # webvm-cgi-run can pre-load the username on command line.
+    # Otherwise, it is safer to avoid names that give uncontrolled
+    # write access (e.g. plain username = member of staff = write
+    # anywhere)
+    $ENV{BOGUS_AUTH_USERNAME} ||= (getpwuid($<))[0].'@fake.sangerweb';
     $ENV{HTTP_CLIENTREALM} = 'sanger,bogus'; # emulate a local user
-    warn "This is DEVEL mode - bogus authentication in use";
+    warn "This is DEVEL mode - bogus authentication ($ENV{BOGUS_AUTH_USERNAME}) in use";
 
     # Error-wrapping is for running on command line (cgi_wrap)
     $Bio::Otter::ServerScriptSupport::ERROR_WRAPPING_ENABLED =
