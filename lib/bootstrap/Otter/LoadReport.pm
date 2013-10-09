@@ -36,7 +36,7 @@ sub run_ps {
         local $ENV{PATH} = '/bin:/usr/bin';
         my ($r, $v) =
           map { int($_ / 1024 + 0.5) }
-            split /\s+/, qx{ ps -o rss= -o vsz= $$ };
+            qx{ ps -o rss= -o vsz= $$ } =~ m{(\d+)}g;
         return "(rss:${r} vsz:${v})MiB";
     } catch {
         return "fail:$_";
