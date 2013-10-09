@@ -102,6 +102,8 @@ sub _wantdir {
     die "Cannot find $what.\n  Looked for @dirs\n$available";
 }
 
+
+# don't forget to untaint!
 sub _readdir {
     my ($dir) = @_;
     return () unless -d $dir;
@@ -252,27 +254,24 @@ sub ensembl {
        [ qr{/(ensembl)-branch-([^/]*)$}, @deps ],
        map { "$_/ensembl-branch-$ensembl_version" } @deps);
 
-    my @lib = map { "$ensembl_root/$_" }
-# team_tools cgi_wrap (local Apache wrapper) did this
-#      qw{
-#  modules
-#  ensembl/modules
-#  ensembl-variation/modules
-#    };
-#
-# Webteam SangerPaths (old webservers) supplied these,
-# If we cut some out, we might also drop them from webvm-deps.git
-      qw{
-  ensembl-draw/modules
-  ensembl-variation/modules
-  ensembl-compara/modules
-  ensembl-external/modules
-  ensembl/modules
-  ensembl-functgenomics/modules
-    };
+    # Exactly which parts of the ensembl-branch-* checkout are
+    # available, and what parts of those we used, has changed several
+    # times.
+    #
+    # When wondering how it used to work, git-log is your friend.
+    #
+    # Right now, we take whatever is present.
+    my @part = map { m{^ensembl} ? "$_/modules" : $_ }
+      map { m{^(ensembl[-a-z0-9_]*)$} ? $1 : die "untaint fail $_" }
+        _readdir($ensembl_root);
+    my @lib = map { "$ensembl_root/$_" } @part;
 
-    die "Ensembl v$ensembl_version is missing components (@lib)"
-      if grep { ! -d $_ } @lib;
+    my @want_part = qw( ensembl-variation/modules ensembl/modules );
+    my @missing = grep {
+        my $want = $_;
+        not grep { $_ eq $want } @part
+    } @want_part;
+    die "Ensembl v$ensembl_version is missing components (@missing)" if @missing;
 
     return @lib;
 }
