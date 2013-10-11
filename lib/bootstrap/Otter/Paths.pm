@@ -32,6 +32,12 @@ sub import {
     foreach my $tag (@tags) {
         if (my ($what, $vsn) = $tag =~ m{^(bioperl|core|ensembl|humpub|intweb|otter)(\d+|-dev|)$}) {
             push @lib, $package->$what($vsn);
+        } elsif (($what) = $tag =~ m{^(\w+-[0-9]{1,3}[.0-9]{0,10})$}) {
+            my $ld = localdeps();
+            my $expect = "$ld/$what.perl5lib";
+            die "Expected symlink to valid dir at $expect for '$tag'" unless
+              -l $expect && -d $expect && -r _;
+            push @lib, $expect;
         } else {
             die "Failed to supply '$tag'";
         }
