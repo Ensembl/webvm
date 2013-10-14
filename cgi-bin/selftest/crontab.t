@@ -4,10 +4,10 @@ use strict;
 use warnings;
 
 BEGIN { use lib ($ENV{OTTER_PERL_INC} || q{}) =~ m{([^:]+)}g }
-use Otter::Paths qw( HTtapTP-0.03 );
+use Otter::Paths qw( HTtapTP-0.04 );
 use Otter::WebCrontab qw( invent_crontab );
 
-use Test::HTtapTP;
+use Test::HTtapTP ':cors_ok';
 use Test::More tests => 2;
 
 
