@@ -5,8 +5,25 @@ use warnings;
 use English qw(-no_match_vars $INPUT_RECORD_SEPARATOR);
 use YAML::Loader;
 
+use Sys::Hostname 'hostname';
+use Otter::Paths;
+
 use base 'Exporter';
-our @EXPORT_OK = qw( get_configuration config_extract host_svndir );
+our @EXPORT_OK = qw( get_configuration config_extract host_svndir server_base_url );
+
+
+=head1 NAME
+
+Otter::WebConfig - handle configuration relating to webteam servers
+
+=head1 DESCRIPTION
+
+This module encapsulates parts of the webteam standard layout, from
+the point of view of webvm.git code.
+
+(It probably needs to grow into a class by now.)
+
+=cut
 
 
 my ($ROOT_PATH, $service_key);
@@ -61,6 +78,74 @@ sub config_extract { # by inspection of /www/utilities/config/scp.yaml v195
     }
 
     return \@out;
+}
+
+
+# Operates three ways,
+#
+#    a) given hash(es) from config_extract, do
+#    implementation-dependent lookup to construct the URL(s)
+#
+#    b) given nothing, and not running as CGI, obtain $WEBDIR and
+#    hostname to cook up case a)
+#
+#    c) given nothing and running as CGI, use the CGI base
+sub server_base_url {
+    my @server = @_;
+    my @out;
+
+    if (!@server && $ENV{GATEWAY_INTERFACE}) {
+        # c)
+        require CGI;
+        push @out, CGI::url(-base => 1);
+    } elsif (!@server) {
+        # b)
+        my $webdir = Otter::Paths->webdir;
+        push @server, _config_like($webdir);
+    }
+
+    foreach my $srv (@server) {
+        # a)
+        my $host = $srv->{hostname};
+        $host .= '.internal.sanger.ac.uk' unless $host =~ m{\.}; # FQDN (ugh)
+        my $port = _webdir2port($srv);
+        push @out, URI->new("http://$host:$port")->canonical->as_string;
+    }
+
+    die "Cannot construct server base url" unless @out;
+
+    return $out[0] if 1 == @out && !wantarray;
+    return @out;
+}
+
+sub _config_like {
+    my ($dir) = @_;
+    my $type = ($dir =~ m{/www/www-(dev|live)/}
+                ? $1
+                : 'sandbox');
+
+    my $tmpdir = $dir;
+    $tmpdir =~ s{^/www/}{/www/tmp/}
+      or die "Cannot guess WEBTMPDIR from $dir";
+
+    my %c = (hostname => hostname(),
+             write => $dir,
+             read => $tmpdir,
+             type => $type);
+
+    return \%c;
+}
+
+sub _webdir2port {
+    my ($self) = @_;
+    my $user = $self->{write} =~ m{^/www/([-a-z0-9]+)/www-dev/} ? $1
+      : 'www-core';
+
+    # Could look up port numbers in ServerRoot/conf/user/*.conf
+    # "Listen" lines but they are fairly static.
+    my %port = qw( www-core 8000 jgrg 8001 jh13 8002 mca 8003 mg13 8004 );
+
+    return $port{$user} or die "Cannot get port number for user $user";
 }
 
 

@@ -9,11 +9,12 @@ use Otter::Paths qw( HTtapTP-0.03 otter-dev );
 use Test::HTtapTP;
 use Test::More;
 
-use CGI 'url';
 use URI;
 use List::MoreUtils 'uniq';
 use Bio::Otter::Server::Config; # to find the designations
 use LWP::UserAgent;
+
+use Otter::WebConfig qw( server_base_url );
 
 my $version;
 my $ua;
@@ -25,7 +26,8 @@ sub main {
 
     $ua = LWP::UserAgent->new;
     $ua->env_proxy;
-    $ua->agent("$ENV{SCRIPT_URI} ");
+    my $prog = $ENV{SCRIPT_URI} || $0;
+    $ua->agent("$prog ");
     $ua->timeout(10);
     # We intend to call the Apache server which is running us,
     # and this can lead to deadlock for non-threaded servers.
@@ -58,7 +60,7 @@ sub otter_server_tt {
     my @part = qw( test get_config?key=otter_config );
     plan tests => scalar @part;
 
-    my $server_here = url(-base => 1);
+    my $server_here = server_base_url();
     my $otter = URI->new_abs("/cgi-bin/otter/$version", $server_here);
     foreach my $part (@part) {
         my $uri = "$otter/$part";
