@@ -1,0 +1,11 @@
+These are both
+
+  CGI scripts (mapping to /cgi-bin/selftest/* on each Apache)
+  which are sourced by http:/cgi-bin/taps
+
+  and standard prove scripts
+    e.g. prove -I $WEBDIR/lib/bootstrap -rv cgi-bin/selftest
+
+They should all pass in either mode, though the environments may be
+different and the HTtapTP access method is more likely to be
+frequently tested.

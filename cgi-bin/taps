@@ -1,0 +1,131 @@
+#! /usr/bin/perl -T
+use strict;
+use warnings;
+
+use CGI 'escapeHTML';
+use URI;
+use Try::Tiny;
+use File::Find;
+
+BEGIN { use lib ($ENV{OTTER_PERL_INC} || q{}) =~ m{([^:]+)}g }
+use Otter::Paths;
+use Otter::WebConfig qw( config_extract );
+
+
+=head1 NAME
+
+taps (CGI) - pull all known server selftests into a browser
+
+=head1 DESCRIPTION
+
+Generates HTML containing marks suitable for
+L<https://github.com/Anacode/HTtapTP>
+
+It is not very useful unless the client-side part is present.
+
+=head1 AUTHOR
+
+mca@sanger.ac.uk
+
+=cut
+
+
+sub main {
+    my $lib = 'HTtapTP-0.03';
+# use Otter::Paths 'HTtapTP-0.03'; delayed to give prettier fail
+    my $none = try { Otter::Paths->import($lib); "" } catch {"Failed: $_"};
+
+    my $q = CGI->new;
+    my @t = find_t();
+
+    if ($none) {
+        my $herr = escapeHTML($none);
+        my @ht = map { escapeHTML($_) } @t;
+        my @ht_li = map {qq{  <li><a href="$_">$_</a></li>\n}} @ht;
+
+        print $q->header(-type=>'text/html', -status=>'412 Precondition Failed');
+        print qq{<html> <head><title> Web server TAPs </title></head>
+<body><h1> Web server TAPs </h1>
+<p> Necessary client libraries for HTtapTP are not available </p>
+<pre class="error">$herr</pre>
+<h2> Diagnostics present </h2>
+<ul>@ht_li</ul>
+</body></html>\n};
+    } else {
+        my $doc = show_tests(@t);
+        print $q->header(-type=>'text/html');
+        print $doc;
+    }
+
+    return 0;
+}
+
+
+sub find_t {
+    my $webdir = Otter::Paths->webdir;
+    my @t;
+
+    find({ wanted => sub { push @t, $_ if m{\.t$} && -f && -x },
+           no_chdir => 1 },
+         "$webdir/cgi-bin/selftest");
+
+    foreach (@t) { s{^.*?(/cgi-bin/)}{$1} } # cook up absolute paths
+
+    return @t;
+}
+
+
+sub show_tests {
+    my @t = @_;
+
+    # Places to find tests
+    my %server = (here => '/');
+    my @th_server = map {
+        my $hk = escapeHTML($_);
+        my $hv = escapeHTML($server{$_});
+        qq{<th><a href="$hv">$hk</a></th>};
+    } sort keys %server;
+
+    # Tests to find
+    my @tr_tests = map {
+        my $src = escapeHTML($_);
+        my @td = (qq{<td data-tap-src="$src"></td>});
+        qq{ <tr>@td</tr>\n};
+    } @t;
+
+    # Cartesian product in 2D
+    my $css = css_txt();
+    return <<"DOC";
+<html>
+<head>
+ <title> Web server TAPs </title>
+ <script type="text/javascript" src="/HTtapTP/ext-js/require.js" data-main="/HTtapTP/js/main"></script>
+ <style type="text/css">$css</style>
+ <link rel="stylesheet" type="text/css" href="/HTtapTP/httaptp.css">
+</head>
+<body><h1> Web server TAPs </h1>
+<table class="tests tap-compact">
+ <tr>@th_server</tr>
+@tr_tests
+</table>
+
+  <strong> N.B. per-server tests not implemented </strong>
+
+</body></html>
+DOC
+}
+
+sub css_txt {
+    return <<CSS;
+  table.tests {
+   border: thin black solid;
+   border-collapse: collapse;
+  }
+  table.tests td {
+    border: 2px purple solid;
+  }
+CSS
+}
+
+
+exit main();
