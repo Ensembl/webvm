@@ -52,7 +52,7 @@ sub main {
 <ul>@ht_li</ul>
 </body></html>\n};
     } else {
-        my $doc = show_tests(@t);
+        my $doc = show_tests($q, @t);
         print $q->header(-type=>'text/html');
         print $doc;
     }
@@ -76,16 +76,32 @@ sub find_t {
 
 
 sub show_tests {
-    my @t = @_;
+    my ($q, @t) = @_;
 
     # Places to find tests
-    my $srv = try {
-        config_extract();
-    } catch {
-        warn "No WebConfig here?  $_";
-        [];
-    };
-    my %server = map {( $_->{hostname} => server_base_url($_) )} @$srv;
+    my %server;
+    if (my @srv = $q->param('server')) {
+        # We will return a document listing these URLs given by the
+        # caller.  Check that they look like server addresses, then
+        # rely on CORS.
+        foreach my $srv (@srv) {
+            die "Cannot clean $srv" unless
+              my ($sch, $h, $p) = $srv =~ m{^(https?://)?([-a-z0-9.]{1,300})(:\d{1,5})?/?$};
+            $sch ||= 'http://';
+            $p ||= '';
+            $server{$h} = "$sch$h$p";
+        }
+    } else {
+        # Ask the config in svn for a list of servers (default)
+        my $srv = try {
+            config_extract();
+        } catch {
+            warn "No WebConfig here?  $_";
+            [];
+        };
+        %server = map {( $_->{hostname} => server_base_url($_) )} @$srv;
+    }
+    # and always show self
     $server{'(here)'} = server_base_url();
 
     my @th_server = map {
