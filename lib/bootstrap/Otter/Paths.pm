@@ -18,9 +18,8 @@ based on L<Module::PortablePath>.
 It is small, stand-alone and intended to be installed as part of the
 webserver configuration.
 
-=head1 AUTHOR
 
-mca@sanger.ac.uk
+=head1 CLASS METHODS
 
 =cut
 
@@ -59,10 +58,18 @@ sub import {
 }
 
 
-# Derive the WEBDIR, i.e. the root of webvm.git
-#
-# Get it from our location, since we are part of that.
-# We could instead take a PassEnv from Apache.
+=head2 webdir()
+
+Derive and return the WEBDIR, i.e. the root of webvm.git
+
+Currently obtains it from source file location, since L<Otter::Paths>
+is part of that.  This can fail if C<@INC> was "too relative", or it
+may return a relative path which will break on C<chdir>.
+
+We could instead take a C<PassEnv> from Apache.
+
+=cut
+
 sub webdir {
     if (__FILE__ =~ m{^(.*)/lib/bootstrap/Otter/Paths\.pm$}) {
         return $1;
@@ -70,6 +77,7 @@ sub webdir {
         die 'Cannot derive $WEBDIR from '.__FILE__;
     }
 }
+
 
 sub localdeps {
     return webdir().'/apps/webvm-deps';
@@ -300,5 +308,12 @@ sub humpub {
 
     return $humpub;
 }
+
+
+=head1 AUTHOR
+
+mca@sanger.ac.uk
+
+=cut
 
 1;
