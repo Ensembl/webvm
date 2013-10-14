@@ -4,6 +4,7 @@ use strict;
 use warnings;
 
 BEGIN { use lib ($ENV{OTTER_PERL_INC} || q{}) =~ m{([^:]+)}g }
+use Otter::PerlVersion;
 use Otter::Paths qw( HTtapTP-0.04 );
 
 use Test::HTtapTP ':cors_ok';
