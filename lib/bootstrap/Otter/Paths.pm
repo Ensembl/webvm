@@ -232,7 +232,10 @@ sub _otter_dev {
     return $vsn[-1];
 }
 
-sub code_root { # XXX:DUP Bio::Otter::Server::Config->data_dir
+# Why code_root and webdir?  They're both solving the same problem,
+# but different ways.  It would be nice to unify them.
+#
+sub code_root { # XXX:DUP:MODIFIED Bio::Otter::Server::Config->data_dir
     my ($pkg) = @_;
 
     # The usual way to find code
@@ -245,6 +248,12 @@ sub code_root { # XXX:DUP Bio::Otter::Server::Config->data_dir
     my $out; # NB: untainted by pattern match
     $out   = $1 if $OSR =~ m(\A(.+?)/?$);
     $out ||= $1 if $DR  =~ m(\A(.+)/htdocs/?$);
+
+    if (!defined $out) {
+        # MODIFIED: extended because we have another source of info
+        $out = $pkg->webdir;
+        $ENV{DOCUMENT_ROOT} = "$out/htdocs"; # for B:O:S:C
+    }
 
     die "Need OTTERLACE_SERVER_ROOT or DOCUMENT_ROOT to find Otter Server files"
       unless defined $out;
