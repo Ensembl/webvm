@@ -79,9 +79,14 @@ sub show_tests {
     my @t = @_;
 
     # Places to find tests
-    my $srv = config_extract();
+    my $srv = try {
+        config_extract();
+    } catch {
+        warn "No WebConfig here?  $_";
+        [];
+    };
     my %server = map {( $_->{hostname} => server_base_url($_) )} @$srv;
-    $server{here} = server_base_url();
+    $server{'(here)'} = server_base_url();
 
     my @th_server = map {
         my $hk = escapeHTML($_);
