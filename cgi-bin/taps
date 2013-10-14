@@ -36,7 +36,7 @@ sub main {
     my $none = try { Otter::Paths->import($lib); "" } catch {"Failed: $_"};
 
     my $q = CGI->new;
-    my @t = find_t();
+    my @t = sort( find_t() );
 
     if ($none) {
         my $herr = escapeHTML($none);
