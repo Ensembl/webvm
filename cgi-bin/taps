@@ -9,7 +9,7 @@ use File::Find;
 
 BEGIN { use lib ($ENV{OTTER_PERL_INC} || q{}) =~ m{([^:]+)}g }
 use Otter::Paths;
-use Otter::WebConfig qw( config_extract );
+use Otter::WebConfig qw( config_extract server_base_url );
 
 
 =head1 NAME
@@ -79,19 +79,32 @@ sub show_tests {
     my @t = @_;
 
     # Places to find tests
-    my %server = (here => '/');
+    my $srv = config_extract();
+    my %server = map {( $_->{hostname} => server_base_url($_) )} @$srv;
+    $server{here} = server_base_url();
+
     my @th_server = map {
         my $hk = escapeHTML($_);
         my $hv = escapeHTML($server{$_});
-        qq{<th><a href="$hv">$hk</a></th>};
+        qq{<th scope="col"><a href="$hv">$hk</a></th>};
     } sort keys %server;
+    my $n_srv = @th_server;
+    unshift @th_server, qq{<td></td>};
 
     # Tests to find
-    my @tr_tests = map {
-        my $src = escapeHTML($_);
-        my @td = (qq{<td data-tap-src="$src"></td>});
-        qq{ <tr>@td</tr>\n};
-    } @t;
+    my @tr_tests;
+    foreach my $t (@t) {
+        my @td = map {
+            my $uri = URI->new_abs($t, $server{$_});
+            my $huri = escapeHTML($uri);
+            qq{<td data-tap-src="$huri" title="$t on $_"></td>};
+        } sort keys %server;
+        my $short = $t;
+        $short =~ s{^.*?selftest/}{};
+        my $hshort = escapeHTML($short);
+        unshift @td, qq{<th scope="row">$hshort</th>};
+        push @tr_tests, qq{ <tr>@td</tr>\n};
+    }
 
     # Cartesian product in 2D
     my $css = css_txt();
@@ -105,11 +118,15 @@ sub show_tests {
 </head>
 <body><h1> Web server TAPs </h1>
 <table class="tests tap-compact">
+ <col class="test" align="left"> <col span="$n_srv" class="server"> <!-- dnw? -->
  <tr>@th_server</tr>
 @tr_tests
 </table>
 
-  <strong> N.B. per-server tests not implemented </strong>
+<p> Attempting to show all machines, but <ul>
+ <li> not other users' sandboxes (not yet implemented) </li>
+ <li> nor any machines not listed in the config file here (how to find them?) </li>
+</ul> </p>
 
 </body></html>
 DOC
@@ -119,10 +136,14 @@ sub css_txt {
     return <<CSS;
   table.tests {
    border: thin black solid;
-   border-collapse: collapse;
   }
   table.tests td {
-    border: 2px purple solid;
+    border: thin black solid;
+  }
+  th {
+   font-family: monospace;
+   font-weight: normal;
+   padding: 0.5ex;
   }
 CSS
 }
