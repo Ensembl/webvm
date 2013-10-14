@@ -28,7 +28,11 @@ ok(defined $packed_ip, "got IP from gethostbyname(3)");
 my $nss_ip = defined $packed_ip ? inet_ntoa($packed_ip) : 'nss fail?';
 diag("nss_ip = $nss_ip");
 
-is($nss_ip, $dns_ip, "nss_ip eq dns_ip");
+{
+    local $TODO;
+    $TODO = "It's weird but it will work OK" if $nss_ip =~ m{^127\.\d+\.\d+\.\d+$};
+    is($nss_ip, $dns_ip, "nss_ip eq dns_ip");
+}
 
 diag <<"WHY";
 \n\n    Why test this?
