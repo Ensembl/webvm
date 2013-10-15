@@ -89,7 +89,7 @@ sub config_extract { # by inspection of /www/utilities/config/scp.yaml v195
         #
         # It's not going to be listed in config/scp.yaml because
         # www-core does not write there.
-        push @out, { hostname => 'web-ottersand-01',
+        push @out, { hostname => 'web-ottersand-01'.$DOMAIN,
                      type => 'sandbox',
                      write => '/www/FOO/www-dev', # bogus - what did you want?
                      read => '/www/tmp/FOO/www-dev' };
