@@ -26,11 +26,17 @@ the point of view of webvm.git code.
 =cut
 
 
-my ($ROOT_PATH, $service_key);
+my ($ROOT_PATH, $service_key, $DOMAIN, %PORT);
 
 sub __init {
     $ROOT_PATH = '/www/utilities'; # will only work on webteam VMs
     $service_key = 'otter';
+    $DOMAIN = '.internal.sanger.ac.uk';
+
+    # XXX: Could look up port numbers in ServerRoot/conf/user/*.conf
+    # "Listen" lines but they are fairly static.
+    %PORT = qw( www-core 8000 jgrg 8001 jh13 8002 mca 8003 mg13 8004 );
+
     return;
 }
 
@@ -57,7 +63,7 @@ sub get_configuration { # based on /www/utilities/restricted-scp v196
 
 
 sub config_extract { # by inspection of /www/utilities/config/scp.yaml v195
-    my ($cfg) = @_;
+    my ($cfg, $no_fixup) = @_;
     $cfg = get_configuration() if !defined $cfg;
 
     my @out;
@@ -72,9 +78,47 @@ sub config_extract { # by inspection of /www/utilities/config/scp.yaml v195
           unless 2 == keys %paths && 2 == keys %rw;
 
         push @out, map {
-            +{ type => $k, hostname => $_,
+            my $fqdn = $_.$DOMAIN;
+            +{ type => $k, hostname => $fqdn,
                write => $rw{write}, read => $rw{read} }
         } @servers;
+    }
+
+    unless ($no_fixup) {
+        # Fake up an entry for the sandbox.
+        #
+        # It's not going to be listed in config/scp.yaml because
+        # www-core does not write there.
+        push @out, { hostname => 'web-ottersand-01',
+                     type => 'sandbox',
+                     write => '/www/FOO/www-dev', # bogus - what did you want?
+                     read => '/www/tmp/FOO/www-dev' };
+
+        # Discover others following the pattern
+        my %type; # key = base, value = [ num, srv ]
+        foreach my $srv (@out) {
+            my ($base, $num) = $srv->{hostname} =~ m{^([^.]+?)(\d+)(?:\.|$)};
+            next unless defined $base;
+            next if defined $type{$base}[0] &&
+              $num lt $type{$base}[0]; # avoid downgrading to numbers
+            $type{$base} = [ $num, $srv ];
+        }
+        while (my ($base, $v) = each %type) {
+            my ($num, $srv) = @$v;
+            my @more_host = grep { $_ ne "$base$num" } _dns_enumerate($base, $num);
+            push @out, map {
+                my %h = %$srv;
+                $h{hostname} = $_.$DOMAIN;
+                \%h;
+            } @more_host;
+        }
+
+        # Exclude those which are not real
+        @out = grep { _valid_host($_->{hostname}) } @out;
+
+        # Sort
+        @out = sort { ($a->{hostname} cmp $b->{hostname}) ||
+                        ($a->{write} cmp $b->{write}) } @out;
     }
 
     return \@out;
@@ -141,12 +185,37 @@ sub _webdir2port {
     my $user = $self->{write} =~ m{^/www/([-a-z0-9]+)/www-dev/} ? $1
       : 'www-core';
 
-    # Could look up port numbers in ServerRoot/conf/user/*.conf
-    # "Listen" lines but they are fairly static.
-    my %port = qw( www-core 8000 jgrg 8001 jh13 8002 mca 8003 mg13 8004 );
-
-    return $port{$user} or die "Cannot get port number for user $user";
+    return $PORT{$user} or die "Cannot get port number for user $user";
 }
+
+
+sub _dns_enumerate {
+    my ($base, $sfx) = @_;
+
+    my @out;
+    while (1) { # exits with last
+        my $try = "$base$sfx";
+        $sfx ++;
+
+        if (_valid_host("$try$DOMAIN")) {
+            # it's valid
+            push @out, $try;
+        } else {
+            last;
+        }
+    }
+
+    return @out;
+}
+
+sub _valid_host {
+    my ($name) = @_;
+
+    my $packed_ip = gethostbyname($name);
+#    print Dump({ gethostbyname => { query => $name, packed_ip => $packed_ip } }) if $opt{debug};
+    return defined $packed_ip;
+}
+
 
 
 __init();
