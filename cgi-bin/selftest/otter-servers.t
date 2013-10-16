@@ -33,6 +33,16 @@ sub main {
     # We intend to call the Apache server which is running us,
     # and this can lead to deadlock for non-threaded servers.
 
+    # Otter Server won't look nice for us if we don't give some auth.
+    #
+    # CGI requests may come with some from the browser.
+    if ($ENV{HTTP_COOKIE}) {
+        $ua->default_header(Cookie => $ENV{HTTP_COOKIE});
+    } else {
+        warn "I have no cookies to offer to Otter Servers";
+    }
+    # XXX:DUP there is code for "obtaining" cookies in team_tools.git bin/curl_otter bin/webvm-cgi-run
+
     subtest "All Otters" => sub {
         plan tests => scalar @version;
         foreach my $major (@version) {
