@@ -107,6 +107,7 @@ sub show_tests {
     my @th_server = map {
         my $hk = escapeHTML($_);
         my $hv = escapeHTML($server{$_});
+        $hk =~ s{\.}{\.<wbr>}g; # optional HTML5 word breaks, for where text rotation doesn't work
         qq{<th scope="col"><a href="$hv">$hk</a></th>};
     } sort keys %server;
     my $n_srv = @th_server;
@@ -140,7 +141,7 @@ sub show_tests {
 <body><h1> Web server TAPs </h1>
 <table class="tests tap-compact">
  <col class="test" align="left"> <col span="$n_srv" class="server"> <!-- dnw? -->
- <tr>@th_server</tr>
+ <tr class='server'>@th_server</tr>
 @tr_tests
 </table>
 
@@ -165,6 +166,10 @@ sub css_txt {
    font-family: monospace;
    font-weight: normal;
    padding: 0.5ex;
+  }
+  .server th {
+    writing-mode: tb-rl; /* http://www.thecssninja.com/css/real-text-rotation-with-css
+      DNW in Firefox 24 */
   }
 CSS
 }
