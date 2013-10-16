@@ -36,8 +36,13 @@ sub main {
     # Otter Server won't look nice for us if we don't give some auth.
     #
     # CGI requests may come with some from the browser.
+    my $q = $ENV{GATEWAY_INTERFACE} ? CGI->new : undef;
     if ($ENV{HTTP_COOKIE}) {
+        diag "Got implicit cookies from browser";
         $ua->default_header(Cookie => $ENV{HTTP_COOKIE});
+    } elsif ($q && $q->param('cookie')) {
+        diag "Got explicit cookies from GET query";
+        $ua->default_header(Cookie => $q->param('cookie'));
     } else {
         warn "I have no cookies to offer to Otter Servers";
     }

@@ -3,6 +3,7 @@ use strict;
 use warnings;
 
 use CGI 'escapeHTML';
+use JSON 'encode_json';
 use URI;
 use Try::Tiny;
 use File::Find;
@@ -128,6 +129,16 @@ sub show_tests {
         push @tr_tests, qq{ <tr>@td</tr>\n};
     }
 
+    # Extra data to pass
+    my %data;
+    # Cookies: we need to give Otter Server tests something valid.
+    # Might need to pass more later, but limit it for now.
+    my @cookie = grep { $_ eq 'WTSISignOn' } $q->cookie;
+    $data{cookie} = join '; ', map { $q->cookie($_) } @cookie if @cookie;
+
+    my $data = encode_json(\%data);
+    my $hdata = escapeHTML($data);
+
     # Cartesian product in 2D
     my $css = css_txt();
     return <<"DOC";
@@ -139,7 +150,7 @@ sub show_tests {
  <link rel="stylesheet" type="text/css" href="/HTtapTP/httaptp.css">
 </head>
 <body><h1> Web server TAPs </h1>
-<table class="tests tap-compact">
+<table class="tests tap-compact" data-tap-data="$hdata">
  <col class="test" align="left"> <col span="$n_srv" class="server"> <!-- dnw? -->
  <tr class='server'>@th_server</tr>
 @tr_tests
