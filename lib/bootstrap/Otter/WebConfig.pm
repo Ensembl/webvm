@@ -26,7 +26,8 @@ the point of view of webvm.git code.
 =cut
 
 
-my ($ROOT_PATH, $service_key, $DOMAIN, %PORT);
+my ($ROOT_PATH, $service_key);
+our ($DOMAIN, %PORT); ##used
 
 sub __init {
     $ROOT_PATH = '/www/utilities'; # will only work on webteam VMs
@@ -66,6 +67,7 @@ sub config_extract { # by inspection of /www/utilities/config/scp.yaml v195
     my ($cfg, $no_fixup) = @_;
     $cfg = get_configuration() if !defined $cfg;
 
+##called
     my @out;
     die "No useful config found" unless $cfg->{$service_key}{live};
     while (my ($k, $v) = each %{ $cfg->{$service_key} }) {
@@ -89,11 +91,14 @@ sub config_extract { # by inspection of /www/utilities/config/scp.yaml v195
         #
         # It's not going to be listed in config/scp.yaml because
         # www-core does not write there.
+##replaced
         push @out, { hostname => 'web-ottersand-01'.$DOMAIN,
                      type => 'sandbox',
                      write => '/www/FOO/www-dev', # bogus - what did you want?
                      read => '/www/tmp/FOO/www-dev' };
 
+### Deprecated - listnew_fixed when it's done
+##copied+fixed
         # Discover others following the pattern
         my %type; # key = base, value = [ num, srv ]
         foreach my $srv (@out) {
@@ -140,6 +145,7 @@ sub server_base_url {
 
     if (!@server && $ENV{GATEWAY_INTERFACE}) {
         # c)
+##replaced
         require CGI;
         push @out, CGI::url(-base => 1);
     } elsif (!@server) {
@@ -180,6 +186,7 @@ sub _config_like {
     return \%c;
 }
 
+##taken
 sub _webdir2port {
     my ($self) = @_;
     my $user = $self->{write} =~ m{^/www/([-a-z0-9]+)/www-dev/} ? $1
@@ -189,6 +196,7 @@ sub _webdir2port {
 }
 
 
+##called
 sub _dns_enumerate {
     my ($base, $sfx) = @_;
 
