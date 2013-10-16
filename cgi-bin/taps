@@ -134,7 +134,7 @@ sub show_tests {
     # Cookies: we need to give Otter Server tests something valid.
     # Might need to pass more later, but limit it for now.
     my @cookie = grep { $_ eq 'WTSISignOn' } $q->cookie;
-    $data{cookie} = join '; ', map { $q->cookie($_) } @cookie if @cookie;
+    $data{cookie} = join '; ', map { "$_=".$q->cookie($_) } @cookie if @cookie;
 
     my $data = encode_json(\%data);
     my $hdata = escapeHTML($data);
