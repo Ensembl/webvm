@@ -89,7 +89,9 @@ sub otter_server_tt {
             last;
         } else {
             ok($resp->is_success, $uri) or
-              diag join "\n", $resp->status_line, $resp->decoded_content;
+              diag join "\n",
+                ($resp->request->as_string,
+                 $resp->status_line, $resp->headers_as_string, $resp->decoded_content);
         }
     }
 }
