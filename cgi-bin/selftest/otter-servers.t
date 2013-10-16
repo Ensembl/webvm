@@ -73,7 +73,8 @@ sub desig2versions {
 }
 
 sub otter_server_tt {
-    my @part = qw( test get_config?key=otter_config );
+    my @part = qw( test );
+    push @part,  $version < 73 ? 'get_otter_config' : 'get_config?key=otter_config';
     plan tests => scalar @part;
 
     my $server_here = server_base_url();
