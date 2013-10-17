@@ -380,4 +380,26 @@ sub is_frontend {
 }
 
 
+=head2 frontend_contains($back)
+
+Return true iff this is a frontend which covers all URLs of the
+backend object C<$back>.
+
+=cut
+
+sub frontend_contains {
+    my ($self, $back) = @_;
+    return 0 unless $self->is_frontend;
+    my $want_base = $back->base_uri;
+
+    my $fe = $$self{frontend};
+    if (ref($fe) ne 'ARRAY') {
+        my $prov = $self->provenance;
+        croak "Frontend (provenance=$prov) reverse proxied list is absent";
+    }
+
+    return 1 if grep { $_ eq $want_base } @$fe;
+    return 0;
+}
+
 1;

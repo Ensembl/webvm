@@ -10,7 +10,7 @@ use File::Find;
 
 BEGIN { use lib ($ENV{OTTER_PERL_INC} || q{}) =~ m{([^:]+)}g }
 use Otter::Paths;
-use Otter::WebConfig qw( config_extract server_base_url );
+use Otter::WebNodes;
 
 
 =head1 NAME
@@ -32,9 +32,7 @@ mca@sanger.ac.uk
 
 
 sub main {
-    my $lib = 'HTtapTP-0.03';
-# use Otter::Paths 'HTtapTP-0.03'; delayed to give prettier fail
-    my $none = try { Otter::Paths->import($lib); "" } catch {"Failed: $_"};
+    my $none = 0; # attempt to give prettier fail - broken
 
     my $q = CGI->new;
     my @t = sort( find_t() );
@@ -78,9 +76,10 @@ sub find_t {
 
 sub show_tests {
     my ($q, @t) = @_;
+    my @info; # notes for bottom of page
 
     # Places to find tests
-    my %server;
+    my @server; # list of [name, url]
     if (my @srv = $q->param('server')) {
         # We will return a document listing these URLs given by the
         # caller.  Check that they look like server addresses, then
@@ -90,27 +89,31 @@ sub show_tests {
               my ($sch, $h, $p) = $srv =~ m{^(https?://)?([-a-z0-9.]{1,300})(:\d{1,5})?/?$};
             $sch ||= 'http://';
             $p ||= '';
-            $server{$h} = "$sch$h$p";
+            push @server, [ $h, "$sch$h$p" ];
         }
+        push @info, "Ignored svn config (if any) when choosing test servers";
     } else {
         # Ask the config in svn for a list of servers (default)
-        my $srv = try {
-            config_extract();
+        try {
+            @server = map
+              {[ $_->display_name => $_->base_uri->as_string ]}
+                Otter::WebNodes->listnew_fixed;
         } catch {
             warn "No WebConfig here?  $_";
-            [];
+            push @info, "Failed to read svn config: $_";
+            @server = map
+              {[ $_->display_name => $_->base_uri->as_string ]}
+                Otter::WebNodes->new_cgi;
         };
-        %server = map {( $_->{hostname} => server_base_url($_) )} @$srv;
     }
-    # and always show self
-    $server{'(here)'} = server_base_url();
 
     my @th_server = map {
-        my $hk = escapeHTML($_);
-        my $hv = escapeHTML($server{$_});
-        $hk =~ s{\.}{\.<wbr>}g; # optional HTML5 word breaks, for where text rotation doesn't work
+        my ($name, $url) = @$_;
+        my $hk = escapeHTML($name);
+        my $hv = escapeHTML($url);
+        $hk =~ s{(\.|@)}{$1<wbr>}g; # optional HTML5 word breaks, for where text rotation doesn't work
         qq{<th scope="col"><a href="$hv">$hk</a></th>};
-    } sort keys %server;
+    } @server;
     my $n_srv = @th_server;
     unshift @th_server, qq{<td></td>};
 
@@ -118,10 +121,12 @@ sub show_tests {
     my @tr_tests;
     foreach my $t (@t) {
         my @td = map {
-            my $uri = URI->new_abs($t, $server{$_});
+            my ($name, $base) = @$_;
+            my $uri = URI->new_abs($t, $base);
+            my $hname = escapeHTML($name);
             my $huri = escapeHTML($uri);
-            qq{<td data-tap-src="$huri" title="$t on $_"></td>};
-        } sort keys %server;
+            qq{<td data-tap-src="$huri" title="$t on $hname"></td>};
+        } @server;
         my $short = $t;
         $short =~ s{^.*?selftest/}{};
         my $hshort = escapeHTML($short);
@@ -134,10 +139,17 @@ sub show_tests {
     # Cookies: we need to give Otter Server tests something valid.
     # Might need to pass more later, but limit it for now.
     my @cookie = grep { $_ eq 'WTSISignOn' } $q->cookie;
-    $data{cookie} = join '; ', map { "$_=".$q->cookie($_) } @cookie if @cookie;
+    if (@cookie) {
+        $data{cookie} = join '; ', map { "$_=".$q->cookie($_) } @cookie;
+        push @info, "Got a useful-looking cookie to feed to Otter Server";
+    } else {
+        push @info, "I have no cookie to feed to Otter Server";
+    }
 
     my $data = encode_json(\%data);
     my $hdata = escapeHTML($data);
+
+    my @hinfo = map { my $h = escapeHTML($_); qq{  <li>$h</li>\n} } @info;
 
     # Cartesian product in 2D
     my $css = css_txt();
@@ -150,16 +162,15 @@ sub show_tests {
  <link rel="stylesheet" type="text/css" href="/HTtapTP/httaptp.css">
 </head>
 <body><h1> Web server TAPs </h1>
+
 <table class="tests tap-compact" data-tap-data="$hdata">
  <col class="test" align="left"> <col span="$n_srv" class="server"> <!-- dnw? -->
  <tr class='server'>@th_server</tr>
 @tr_tests
 </table>
 
-<p> Attempting to show all machines, but <ul>
- <li> not other users' sandboxes (not yet implemented) </li>
- <li> nor any machines not listed in the config file here (how to find them?) </li>
-</ul> </p>
+<p> Attempting to show all machines. </p>
+<ul> @hinfo </ul>
 
 </body></html>
 DOC

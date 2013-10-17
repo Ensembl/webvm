@@ -12,10 +12,11 @@ use Test::More;
 
 use URI;
 use List::MoreUtils 'uniq';
-use Bio::Otter::Server::Config; # to find the designations
 use LWP::UserAgent;
 
-use Otter::WebConfig qw( server_base_url );
+use Bio::Otter::Server::Config; # to find the designations
+use Otter::WebNodes; # to find self
+
 
 my $version;
 my $ua;
@@ -26,7 +27,7 @@ sub main {
     cmp_ok(scalar @version, '>', 3, 'some Otter Server versions');
 
     $ua = LWP::UserAgent->new;
-    $ua->env_proxy;
+    $ua->env_proxy; # XXX: report it
     my $prog = $ENV{SCRIPT_URI} || $0;
     $ua->agent("$prog ");
     $ua->timeout(10);
@@ -77,7 +78,7 @@ sub otter_server_tt {
     push @part,  $version < 73 ? 'get_otter_config' : 'get_config?key=otter_config';
     plan tests => scalar @part;
 
-    my $server_here = server_base_url();
+    my $server_here = Otter::WebNodes->new_cgi->base_uri;
     my $otter = URI->new_abs("/cgi-bin/otter/$version", $server_here);
     foreach my $part (@part) {
         my $uri = "$otter/$part";
