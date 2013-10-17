@@ -40,6 +40,7 @@ authorised.
 
 Requests to non-DEVEL servers which are did not come through a ZXTM
 will not have the "HTTP_CLIENTREALM:sanger", so they need a cookie.
+Give your browser one at http://www.sanger.ac.uk/my_login.shtml
 
 AUTH
 
