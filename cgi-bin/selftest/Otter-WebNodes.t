@@ -37,6 +37,9 @@ sub in_config_tt {
 Ensuring the backends are listed in the webteam svn configuration on
 each host should mean that we have access via smithssh(1)
 WHY
+
+    plan skip_all => 'frontend proxies are not listed here' if $me->is_frontend;
+
     if ($me->type eq 'sandbox') {
         # Message-ID: <20131015125252.GM5561@sanger.ac.uk>
         plan skip_all => 'sandboxes are not expected in the config (files are not written there by www-core)';
@@ -62,6 +65,8 @@ problems.
 WHY
 
     plan skip_all => 'this is not a backend' if $me->is_frontend;
+    plan skip_all => 'live backends have no all-URL frontend'
+      if $me->type eq 'live';
 
     my @front = grep { $_->frontend_contains($me) }
       Otter::WebNodes->listnew_fixed;
