@@ -82,8 +82,14 @@ sub selfwrap {
     # We may now discover that we are running the wrong Perl,
     # so start again with the correct one.
     if (my $want_perl = delete $ENV{OTTER_PERL_EXE}) {
-        my @libs = split ':', delete $ENV{OTTER_PERL_INC} || q{};
+        my $inc = delete $ENV{OTTER_PERL_INC} || q{};
+        my @libs = split ':', $inc;
         local $ENV{PATH} = detaint($ENV{PATH}); # we intend not to use it, but exec insists and we don't insist $want_perl is absolute
+
+        # Clues for those reading %ENV later
+        local $ENV{OTTER_PERL_EXE_used} = $want_perl;
+        local $ENV{OTTER_PERL_INC_used} = $inc;
+
         my @cmd = map { detaint($_) }
           ($want_perl, (map { -I => $_ } @libs), -Tw => $0, @ARGV);
         { exec @cmd; }
