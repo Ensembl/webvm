@@ -12,10 +12,10 @@ use Test::More;
 
 use URI;
 use List::MoreUtils 'uniq';
-use LWP::UserAgent;
 
 use Bio::Otter::Server::Config; # to find the designations
 use Otter::WebNodes; # to find self
+use Otter::TestUA 'make_ua';
 
 
 my $version;
@@ -26,36 +26,7 @@ sub main {
     my @version = desig2versions();
     cmp_ok(scalar @version, '>', 3, 'some Otter Server versions');
 
-    $ua = LWP::UserAgent->new;
-    $ua->env_proxy; # XXX: report it
-    my $prog = $ENV{SCRIPT_URI} || $0;
-    $ua->agent("$prog ");
-    $ua->timeout(10);
-    # We intend to call the Apache server which is running us,
-    # and this can lead to deadlock for non-threaded servers.
-
-    diag <<AUTH;
-Otter Server will forbid requests which are not internal or
-authorised.
-
-Requests to non-DEVEL servers which are did not come through a ZXTM
-will not have the "HTTP_CLIENTREALM:sanger", so they need a cookie.
-Give your browser one at http://www.sanger.ac.uk/my_login.shtml
-
-AUTH
-
-    # CGI requests may come with some from the browser.
-    my $q = $ENV{GATEWAY_INTERFACE} ? CGI->new : undef;
-    if ($ENV{HTTP_COOKIE}) {
-        diag "Got implicit cookies from browser";
-        $ua->default_header(Cookie => $ENV{HTTP_COOKIE});
-    } elsif ($q && $q->param('cookie')) {
-        diag "Got explicit cookies from GET query";
-        $ua->default_header(Cookie => $q->param('cookie'));
-    } else {
-        warn "I have no cookies to offer to Otter Servers";
-    }
-    # XXX:DUP there is code for "obtaining" cookies in team_tools.git bin/curl_otter bin/webvm-cgi-run
+    $ua = make_ua();
 
     subtest "All Otters" => sub {
         plan tests => scalar @version;
