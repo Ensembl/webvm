@@ -80,6 +80,7 @@ sub show_tests {
 
     # Places to find tests
     my @server; # list of [name, url]
+    my $me_base = Otter::WebNodes->new_cgi->base_uri->as_string;
     if (my @srv = $q->param('server')) {
         # We will return a document listing these URLs given by the
         # caller.  Check that they look like server addresses, then
@@ -89,7 +90,7 @@ sub show_tests {
               my ($sch, $h, $p) = $srv =~ m{^(https?://)?([-a-z0-9.]{1,300})(:\d{1,5})?/?$};
             $sch ||= 'http://';
             $p ||= '';
-            push @server, [ $h, "$sch$h$p" ];
+            push @server, [ $h, URI->new("$sch$h$p")->canonical->as_string ];
         }
         push @info, "Ignored svn config (if any) when choosing test servers";
     } else {
@@ -114,7 +115,6 @@ sub show_tests {
         $hk =~ s{(\.|@)}{$1<wbr>}g; # optional HTML5 word breaks, for where text rotation doesn't work
         qq{<th scope="col"><a href="$hv">$hk</a></th>};
     } @server;
-    my $n_srv = @th_server;
     unshift @th_server, qq{<td></td>};
 
     # Tests to find
@@ -150,6 +150,10 @@ sub show_tests {
     my $hdata = escapeHTML($data);
 
     my @hinfo = map { my $h = escapeHTML($_); qq{  <li>$h</li>\n} } @info;
+    my @col = (qq{  <col class="testname">\n},
+               map { my $cls = $_->[1] eq $me_base
+                       ? ' class="server-me"' : '';
+                     qq{  <col$cls>\n} } @server);
 
     # Cartesian product in 2D
     my $css = css_txt();
@@ -164,8 +168,8 @@ sub show_tests {
 <body><h1> Web server TAPs </h1>
 
 <table class="tests tap-compact" data-tap-data="$hdata">
- <col class="test" align="left"> <col span="$n_srv" class="server"> <!-- dnw? -->
- <tr class='server'>@th_server</tr>
+ @col
+ <tr class='server-name'>@th_server</tr>
 @tr_tests
 </table>
 
@@ -188,10 +192,20 @@ sub css_txt {
    font-family: monospace;
    font-weight: normal;
    padding: 0.5ex;
+   text-align: left;
   }
-  .server th {
+  .server-name th {
+    text-align: center;
     writing-mode: tb-rl; /* http://www.thecssninja.com/css/real-text-rotation-with-css
       DNW in Firefox 24 */
+  }
+  .server-me {
+    /* table col
+     * http://quirksmode.org/css/css2/columns.html
+     *   via http://stackoverflow.com/questions/157770/table-column-formatting
+     */
+    background: #b0d0ff;
+    /* border: 3px grey solid; * DNW in FF 20*/
   }
 CSS
 }
