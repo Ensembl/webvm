@@ -34,8 +34,15 @@ sub main {
     # We intend to call the Apache server which is running us,
     # and this can lead to deadlock for non-threaded servers.
 
-    # Otter Server won't look nice for us if we don't give some auth.
-    #
+    diag <<AUTH;
+Otter Server will forbid requests which are not internal or
+authorised.
+
+Requests to non-DEVEL servers which are did not come through a ZXTM
+will not have the "HTTP_CLIENTREALM:sanger", so they need a cookie.
+
+AUTH
+
     # CGI requests may come with some from the browser.
     my $q = $ENV{GATEWAY_INTERFACE} ? CGI->new : undef;
     if ($ENV{HTTP_COOKIE}) {
