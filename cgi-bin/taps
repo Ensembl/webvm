@@ -2,15 +2,17 @@
 use strict;
 use warnings;
 
+BEGIN { use lib ($ENV{OTTER_PERL_INC} || q{}) =~ m{([^:]+)}g }
+use Otter::PerlVersion;
+
 use CGI 'escapeHTML';
 use JSON 'encode_json';
 use URI;
 use Try::Tiny;
 use File::Find;
 
-BEGIN { use lib ($ENV{OTTER_PERL_INC} || q{}) =~ m{([^:]+)}g }
-use Otter::Paths;
 use Otter::WebNodes;
+use Otter::Paths; # just for webdir
 
 
 =head1 NAME
