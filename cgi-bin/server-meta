@@ -11,7 +11,8 @@ use File::Find;
 
 BEGIN { use lib ($ENV{OTTER_PERL_INC} || q{}) =~ m{([^:]+)}g }
 use Otter::Paths;
-use Otter::WebConfig qw( config_extract host_svndir );
+use Otter::WebConfig qw( host_svndir );
+use Otter::WebNodes;
 
 
 =head1 NAME
@@ -42,7 +43,8 @@ sub main {
     # Generate details
     my $t0 = [ gettimeofday() ];
     my %out =
-      (svn_config => (try { config_extract() } catch { "ERR:$_" }),
+      (svn_config => (try { retro_config_extract() } catch { "ERR:$_" }),
+       webnodes   => (try { webnodes() } catch { "ERR:$_" }),
        load => \@load,
        webdir => $WEBDIR,
        t0 => $^T,
@@ -62,6 +64,41 @@ sub main {
     print Dump(\%out);
 
     return 0;
+}
+
+
+sub retro_config_extract {
+    # This script first listed config_extract() with no fixup, and
+    # webhosts(1) used the data to drive rsync.
+    #
+    # Some fixup was necessary to reach all hosts.
+    # Then the fixup moved.
+    #
+    # This is a backwards compatible translation, and the hashkey
+    # 'svn_config' is a misnomer.
+    my @srv = Otter::WebNodes->listnew_fixed;
+    my @back = grep { ! $_->is_frontend } @srv;
+
+    my @data = map {
+        +{( hostname => $_->vhost,
+            type => $_->type,
+            read => $_->webtmpdir,
+            write => $_->webdir,
+            # above: original, below: extensions
+            user => $_->user,
+            vport => $_->vport,
+            base_uri => $_->base_uri->as_string,
+            provenance => $_->provenance,
+          )}
+    } @back;
+
+    return \@data;
+}
+
+sub webnodes {
+    my @srv = Otter::WebNodes->listnew_fixed;
+    foreach my $o (@srv) { $o->fillin }
+    return \@srv;
 }
 
 

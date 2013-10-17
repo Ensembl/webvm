@@ -402,4 +402,27 @@ sub frontend_contains {
     return 0;
 }
 
+
+=head2 fillin()
+
+A bodge to make most of the read-accessor properties explicit in the
+hash, so the object can be serialised and the reader doesn't need this
+class.
+
+=cut
+
+sub fillin {
+    my ($self) = @_;
+
+    my @prop = (qw( vhost vport provenance type ),
+                qw( base_uri is_frontend display_name )); # derived
+    push @prop, qw( user webdir webtmpdir ) unless $self->is_frontend;
+
+    foreach my $prop (@prop) {
+        $$self{$prop} = $self->$prop;
+    }
+
+    return $self;
+}
+
 1;
