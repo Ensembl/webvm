@@ -14,13 +14,15 @@ the URL of each live backend?"
 
 =cut
 
-use Otter::WebConfig;
+use Otter::WebConfig 'config_extract';
 use Otter::Paths;
 
 use URI;
 use Carp;
 use Try::Tiny;
 
+my ($DOMAIN, %PORT);
+__init();
 
 =head1 CLASS METHODS
 
@@ -95,11 +97,14 @@ sub listnew_config {
     my ($pkg) = @_;
     croak "wantarray!" unless wantarray;
 
-    my $raw = Otter::WebConfig::config_extract(undef, 1);
+    my $raw = config_extract(undef, 1);
     return map {
         my %new = (provenance => 'config',
                    frontend => 0);
-        @new{qw{ vhost type webdir webtmpdir }} = @{$_}{qw{ hostname type write read }};
+        @new{qw{ vhost type webdir webtmpdir }} =
+          @{$_}{qw{ hostname type write read }};
+        $new{vhost} .= $DOMAIN;
+
         $pkg->new(%new);
     } @$raw;
 }
@@ -116,10 +121,10 @@ sub listnew_sandboxes {
     my ($pkg) = @_;
 
     my @out;
-    foreach my $user (keys %Otter::WebConfig::PORT) {
+    foreach my $user (keys %PORT) {
         next if $user eq 'www-core'; # has no sandboxes
         my %back =
-          (vhost => 'web-ottersand-01'.$Otter::WebConfig::DOMAIN, # assuming just one
+          (vhost => 'web-ottersand-01'.$DOMAIN, # assuming just one
            type => 'sandbox',
            webdir => "/www/$user/www-dev",
            webtmpdir => "/www/tmp/$user/www-dev",
@@ -167,7 +172,7 @@ sub listnew_fixed {
     }
     while (my ($base, $v) = each %model) {
         my ($num, $srv, $dom) = @$v;
-        my @more_host = grep { $_ ne "$base$num" } Otter::WebConfig::_dns_enumerate($base, $num);
+        my @more_host = grep { $_ ne "$base$num" } __dns_enumerate($base, $num);
 
         # Clone, but different vhost
         foreach my $hostname (@more_host) {
@@ -179,7 +184,7 @@ sub listnew_fixed {
     }
 
     # Exclude those which are not real
-    @back = grep { Otter::WebConfig::_valid_host($_->vhost) } @back;
+    @back = grep { __valid_host($_->vhost) } @back;
 
     # Construct known front-ends
     my @front;
@@ -200,6 +205,33 @@ sub listnew_fixed {
     return @out;
 }
 
+sub __dns_enumerate {
+    my ($base, $sfx) = @_;
+
+    my @out;
+    while (1) { # exits with last
+        my $try = "$base$sfx";
+        $sfx ++;
+
+        if (__valid_host("$try$DOMAIN")) {
+            # it's valid
+            push @out, $try;
+        } else {
+            last;
+        }
+    }
+
+    return @out;
+}
+
+sub __valid_host {
+    my ($name) = @_;
+
+    my $packed_ip = gethostbyname($name);
+#    print Dump({ gethostbyname => { query => $name, packed_ip => $packed_ip } }) if $opt{debug};
+    return defined $packed_ip;
+}
+
 
 sub _front4 {
     my ($pkg, $vhost, @back) = @_;
@@ -215,6 +247,17 @@ sub _front4 {
        frontend => [ map { $_->base_uri } @back ]);
 
     return $pkg->new(%new);
+}
+
+
+sub __init {
+    # XXX: Could look up port numbers in ServerRoot/conf/user/*.conf
+    # "Listen" lines but they are fairly static.
+    %PORT = qw( www-core 8000 jgrg 8001 jh13 8002 mca 8003 mg13 8004 );
+
+    $DOMAIN = '.internal.sanger.ac.uk';
+
+    return;
 }
 
 
@@ -265,7 +308,7 @@ sub vport {
 sub _webdir2port {
     my ($self) = @_;
     my $user = $self->user;
-    return $Otter::WebConfig::PORT{$user} or croak "Cannot get port number for user $user";
+    return $PORT{$user} or croak "Cannot get port number for user $user";
 }
 
 
