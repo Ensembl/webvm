@@ -4,6 +4,7 @@ use warnings;
 
 use LWP::UserAgent;
 use CGI;
+use List::MoreUtils qw( uniq );
 use Test::More;
 
 use base 'Exporter';
@@ -27,7 +28,7 @@ sub make_ua {
     $q ||= CGI->new if $ENV{GATEWAY_INTERFACE};
 
     my $ua = LWP::UserAgent->new;
-    $ua->env_proxy; # XXX: report it
+    $ua->env_proxy;
     my $prog = $ENV{SCRIPT_URI} || $0;
     $ua->agent("$prog ");
     $ua->timeout(10);
@@ -43,6 +44,19 @@ will not have the "HTTP_CLIENTREALM:sanger", so they need a cookie.
 Give your browser one at http://www.sanger.ac.uk/my_login.shtml
 
 AUTH
+
+    # Report the proxy
+    # XXX:DUP Bio::Otter::Lace::Client->ua_tell_proxies
+    my %info;
+    @info{qw{ http https }} = map { defined $_ ? $_ : 'none' }
+      $ua->proxy([qw[ http https ]]);
+    if ($info{http} eq $info{https}) {
+        $info{'http[s]'} = delete $info{http};
+        delete $info{https};
+    }
+    my @nopr = @{ $ua->{no_proxy} }; # there is no get accessor
+    $info{no_proxy} = join ',', uniq(@nopr) if @nopr;
+    diag explain { ua_proxy => \%info };
 
     # CGI requests may come with some from the browser.
     if ($ENV{HTTP_COOKIE}) {
