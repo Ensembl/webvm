@@ -188,10 +188,11 @@ sub listnew_fixed {
 
     # Construct known front-ends
     my @front;
-    foreach my $type (qw( dev staging )) {
+    foreach my $type (qw( live staging dev )) {
         # not expected for live
         # sandbox are found separately
-        push @front, $pkg->_front4("otter.$type.sanger.ac.uk",
+        my $part = $type eq 'live' ? '' : ".$type";
+        push @front, $pkg->_front4("otter$part.sanger.ac.uk",
                                    grep { $_->type eq $type } @back);
     }
 
