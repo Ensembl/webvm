@@ -428,12 +428,16 @@ sub is_frontend {
 Return true iff this is a frontend which covers all URLs of the
 backend object C<$back>.
 
+=head2 frontend_contains()
+
+Return a list of (copies of) the backend L<URI>s to which this
+frontend maps.
+
 =cut
 
 sub frontend_contains {
     my ($self, $back) = @_;
-    return 0 unless $self->is_frontend;
-    my $want_base = $back->base_uri;
+    return () unless $self->is_frontend;
 
     my $fe = $$self{frontend};
     if (ref($fe) ne 'ARRAY') {
@@ -441,8 +445,14 @@ sub frontend_contains {
         croak "Frontend (provenance=$prov) reverse proxied list is absent";
     }
 
-    return 1 if grep { $_ eq $want_base } @$fe;
-    return 0;
+    if (defined $back) {
+        my $want_base = $back->base_uri;
+        return 1 if grep { $_ eq $want_base } @$fe;
+        return 0;
+    } else {
+        my @back = map { $_->clone } @$fe;
+        return @back;
+    }
 }
 
 
