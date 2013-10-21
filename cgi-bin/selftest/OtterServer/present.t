@@ -53,12 +53,13 @@ sub desig2versions {
 }
 
 sub otter_server_tt {
-    my @part = qw( test );
+    my @part = qw( test get_sequencesets?client=OtterServer/present.t&dataset=human );
     push @part,  $version < 73 ? 'get_otter_config' : 'get_config?key=otter_config';
     plan tests => scalar @part;
 
     my $server_here = Otter::WebNodes->new_cgi->base_uri;
     my $otter = URI->new_abs("/cgi-bin/otter/$version", $server_here);
+
     foreach my $part (@part) {
         my $uri = "$otter/$part";
         my $resp = $ua->get($uri);
