@@ -38,10 +38,10 @@ sub fffilter {
               (qw( git describe --tags --long --always --abbrev=8 --dirty ),
                $with);
             $repo_hash->{$repo}{status} = try {
-                pipefrom_with(qw( git status --ignored ), $with);
+                pipefrom_with(qw( git status --ignore-submodules --ignored ), $with);
                 # --ignore not not supported in 1.7.9.5 (on Lucid)
             } catch {
-                warn "git status($repo): retry without --ignored";
+                warn "git status($repo): retry without --ignore*";
                 pipefrom_with(qw( git status ), $with);
             };
             for ($repo_hash->{$repo}{status}) {
