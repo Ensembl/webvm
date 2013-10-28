@@ -10,13 +10,11 @@ use Test::HTtapTP ':cors_ok';
 use Test::More;
 
 use Try::Tiny;
-use LWP::UserAgent;
-use XML::XPath;
-use XML::XPath::XMLParser;
 use YAML 'Dump';
 
 use Otter::WebNodes;
 use WebVM::Util qw( gits_info );
+use WebVM::GitLatest;
 
 
 sub main {
@@ -33,6 +31,7 @@ sub main {
 
     my ($have_detail, %have, %have_spare);
     my $ok = 1;
+    my $lookup = WebVM::GitLatest->new;
 
     try {
         my $WEBDIR = Otter::Paths->webdir;
@@ -40,7 +39,9 @@ sub main {
         ### Fetch commitid for expected repos
         #
         while (my ($name, $repo_ref) = each %want_repos) {
-            my @ciid8 = git_latest(@$repo_ref);
+            my ($repo_dir, $branch) = @$repo_ref;
+            my @ciid8 = $lookup->latest_ciid("anacode/$repo_dir.git",
+                                             "refs/heads/$branch", 8);
             $want_detail{$name} = { recent_commits => \@ciid8 };
             $want{$name} = { ciid8 => $ciid8[0], dirty => 'clean' };
         }
@@ -82,20 +83,9 @@ sub main {
         foreach my $name (sort keys %want) {
             my $src = $want_repos{$name}[0];
             my $recent = $want_detail{$name}{recent_commits};
-            my $n = @$recent - 1;
-            my $diagnosis;
-            if (defined $have{$name}) {
-                my ($found_idx) =
-                  grep { $have{$name}{ciid8} eq $recent->[$_] } (0..$n);
-                $diagnosis = (defined $found_idx
-                              ? "$found_idx commit(s) behind"
-                              : "Ahead or >$n commits behind");
-            } else {
-                $diagnosis = 'Absent';
-            }
             $ok &= is_deeply($have{$name}, $want{$name},
                              "Expected repository '$name' ($src) up-to-date")
-              || diag $diagnosis;
+              || diag( WebVM::GitLatest->diagnose($have{$name}{ciid8}, @$recent) );
         }
         $ok &= is(scalar keys %have_spare, 0, 'No unexpected repos')
           || diag explain [ keys %have_spare ];
@@ -110,41 +100,6 @@ sub main {
       unless $ok;
 
     return 0;
-}
-
-
-# Ask our gitweb server, return list of --abbrev=8 commitids
-sub git_latest {
-    my ($name, $branch) = @_;
-
-    my $ref = "refs/heads/$branch";
-    my $url = "http://git.internal.sanger.ac.uk/cgi-bin/gitweb.cgi?p=anacode/$name.git;a=atom;h=$ref";
-
-    my $ua = LWP::UserAgent->new;
-    $ua->agent("$0 ");
-    $ua->timeout(10);
-    $ua->env_proxy;
-
-    my $resp = $ua->get($url);
-    if ($resp->is_success) {
-        my $xp = XML::XPath->new(xml => $resp->decoded_content);
-        my $nodeset = $xp->find('/feed/entry/id');
-        my @ciid;
-        foreach my $node ($nodeset->get_nodelist) {
-            my $id = XML::XPath::XMLParser::as_string($node);
-            # <id>http://git.internal.sanger.ac.uk/cgi-bin/gitweb.cgi?p=anacode/webvm.git;a=commitdiff;h=f29b84f6a71b9631066d3764995d0b6c5d00fd93</id>
-            my ($ciid) = $id =~ m{h=([0-9a-f]{40})}
-              or die "Cannot extract ciid from $id";
-            push @ciid, substr($ciid, 0, 8);
-        }
-        if (!@ciid) {
-            diag $resp->decoded_content;
-            die "Fetch of $url returned valid atom XML but no commitid";
-        }
-        return @ciid;
-    } else {
-        die "Fetch of $url failed: ".$resp->status_line;
-    }
 }
 
 
