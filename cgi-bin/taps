@@ -34,7 +34,11 @@ mca@sanger.ac.uk
 
 
 sub main {
-    my $none = 0; # attempt to give prettier fail - broken
+    my $none = do {
+        my $webdir = Otter::Paths->webdir;
+        my $fn = "$webdir/apps/HTtapTP/js/httaptp.js";
+        -f $fn ? 0 : "File $fn is absent";
+    };
 
     my $q = CGI->new;
     my @t = sort( find_t() );
@@ -177,6 +181,7 @@ sub show_tests {
 
 <p> Attempting to show all machines. </p>
 <ul> @hinfo </ul>
+<p> You can <a href="http://www.sanger.ac.uk/my_login.shtml">get a cookie</a> to feed to the Otter Servers.  Reload this page afterwards. </p>
 
 </body></html>
 DOC

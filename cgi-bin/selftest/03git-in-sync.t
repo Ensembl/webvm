@@ -80,6 +80,7 @@ sub main {
           if $host_type eq 'sandbox';
 
         foreach my $name (sort keys %want) {
+            my $src = $want_repos{$name}[0];
             my $recent = $want_detail{$name}{recent_commits};
             my $n = @$recent - 1;
             my $diagnosis;
@@ -93,7 +94,7 @@ sub main {
                 $diagnosis = 'Absent';
             }
             $ok &= is_deeply($have{$name}, $want{$name},
-                             "Expected repository '$name' up-to-date")
+                             "Expected repository '$name' ($src) up-to-date")
               || diag $diagnosis;
         }
         $ok &= is(scalar keys %have_spare, 0, 'No unexpected repos')
