@@ -44,8 +44,8 @@ sub latest_ciid {
             push @ciid, substr($ciid, 0, $abbr);
         }
         if (!@ciid) {
-            diag $resp->decoded_content;
-            die "Fetch of $url returned valid atom XML but no commitid";
+            die "Fetch of $url returned valid atom XML but no commitid\n".
+              $resp->decoded_content;
         }
         return @ciid;
     } else {

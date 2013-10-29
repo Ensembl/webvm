@@ -113,7 +113,7 @@ sub _wantdir {
 
     $available = (@dir && $regex) ? "  Found none in (@dir) =~ $regex\n" : '';
     $available = "  Available are (@available)\n" if @available;
-    die "Cannot find $what.\n  Looked for @dirs\n$available";
+    die "Cannot find $what\n  Looked for @dirs\n$available";
 }
 
 
