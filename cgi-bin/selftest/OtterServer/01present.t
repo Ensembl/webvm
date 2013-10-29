@@ -11,7 +11,6 @@ use Test::HTtapTP ':cors_ok';
 use Test::More;
 
 use URI;
-use List::MoreUtils 'uniq';
 
 use Bio::Otter::Server::Config; # to find the designations
 use Otter::WebNodes; # to find self
@@ -23,8 +22,10 @@ my $ua;
 
 sub main {
     plan tests => 2;
-    my @version = desig2versions();
-    cmp_ok(scalar @version, '>', 3, 'some Otter Server versions');
+    my @version = Bio::Otter::Server::Config->extant_versions();
+    cmp_ok(scalar @version,
+           '>', 1, # live & dev
+           'some Otter Server versions');
 
     $ua = make_ua();
 
@@ -36,20 +37,6 @@ sub main {
         }
     };
     return 0;
-}
-
-sub desig2versions {
-    my $desig = Bio::Otter::Server::Config->designations;
-    my $desig_re = qr{^(\d{2,4})(?:\.\d+)?$};
-    my @version = map { if ($desig->{$_} =~ $desig_re) {
-        $1;
-    } else {
-        die "Didn't understand desig($_ => $desig->{$_}) with $desig_re";
-    } } keys %$desig;
-    @version = uniq(sort @version);
-
-    die unless wantarray;
-    return @version;
 }
 
 sub otter_server_tt {
