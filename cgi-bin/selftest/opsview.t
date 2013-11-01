@@ -52,7 +52,12 @@ sub main {
 
     # http://docs.opsview.com/doku.php?id=opsview-core:restapi:status
     my $host = hostname();
-#$host = 'does-not-cromulate';
+    {
+        # Debug hatch.  Pass ?host=does-not-cromulate
+        my $cgi = CGI->new;
+        my $override = $cgi->param('host');
+        $host = $1 if defined $override && $override =~ /^([-a-z0-9]{2,26})$/;
+    }
     my $data = do_rest($ua, get => 'status/host', \@auth_hdrs,
                        host => $host,
                       );
@@ -68,11 +73,40 @@ sub main {
         subtest Status => sub { diagnose($host, $host_data) };
     }
 
-    diag Dump($data);
+    ### Below - diagnostics, info about the services, no more tests
+    #
+#    my $svc_data = do_rest($ua, get => 'status/service', \@auth_hdrs,
+#                           host => $host,
+#                           order => 'state',
+#                           filter => 'unhandled', # broken?
+#                           includehandleddetails => 1,
+#                           includeperfdata => 1);
+# This is not showing me the failing services.
+# We already gave a link to the webapp.
+
+    diag Dump({
+#               '01_service_detail' => service_info($svc_data),
+               full_debug => { host => $data,
+#                               services => $svc_data,
+                             },
+              });
 
     return 0;
 }
 
+
+sub service_info {
+    my ($svc_data) = @_;
+    my @out;
+
+    foreach my $S (@{ $svc_data->{list}[0]{services} }) {
+        my @info = map { defined $S->{$_}
+                           ? (sprintf('%17s: %s', $_, $S->{$_})) : () }
+          qw( name state output downtime_username downtime_comment );
+        push @out, \@info;
+    }
+    return \@out;
+}
 
 sub diagnose {
     my ($host, $host_data) = @_;
