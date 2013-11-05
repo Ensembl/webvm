@@ -17,7 +17,7 @@ use Otter::WebNodes;
 
 my ($hostname, $me);
 sub main {
-    plan tests => 3;
+    plan tests => 4;
 
     $hostname = ($ENV{GATEWAY_INTERFACE}
                  ? CGI->new->virtual_host
@@ -28,11 +28,7 @@ sub main {
     subtest in_config => \&in_config_tt;
     subtest in_fixup =>  \&in_fixup_tt;
     subtest back2front => \&back2front_tt;
-
-    # This is the best test to show all the details at the end
-    my @lnf = Otter::WebNodes->listnew_fixed;
-    foreach my $obj ($me, @lnf) { $obj->fillin }
-    diag explain { new_cgi => $me, listnew_fixed => \@lnf };
+    subtest fillin => \&fillin_tt;
 
     return 0;
 }
@@ -128,5 +124,26 @@ sub in_list {
     return 0;
 }
 
+
+sub fillin_tt {
+    my @lnf = Otter::WebNodes->listnew_fixed;
+    plan tests => 1+@lnf;
+
+    foreach my $obj ($me, @lnf) {
+        my $uri = $obj->base_uri;
+        my $prov = $obj->provenance;
+        my $got = try {
+            $obj->fillin;
+            'ok';
+        } catch {
+            $obj->{FAIL} = $_; # to show in diag
+            "ERR:$_";
+        };
+        is($got, 'ok', "fillin for $uri of $prov");
+    }
+
+    # This is the best test to show all the details at the end
+    diag explain { new_cgi => $me, listnew_fixed => \@lnf };
+}
 
 main();

@@ -391,12 +391,11 @@ Some kind of short name.
 
 sub display_name {
     my ($self) = @_;
-    my $user = try { $self->user } catch { '' };
     my $host = $self->vhost;
     $host =~ s{(?:\.internal)?\.sanger\.ac\.uk$}{~};
     $host =~ s{^web-otter(.+?)-?(\d+)~$}{~$1$2~};
-    $user = '' if $user eq 'www-core';
-    $user .= '@' if $user ne '';
+    my $user = $self->is_frontend ? '' : $self->user;
+    $user = $user =~ /^(www-core|)$/ ? '' : $user.'@';
     return $user.$host;
 }
 
