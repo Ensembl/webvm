@@ -29,6 +29,11 @@ sub main {
     subtest in_fixup =>  \&in_fixup_tt;
     subtest back2front => \&back2front_tt;
 
+    # This is the best test to show all the details at the end
+    my @lnf = Otter::WebNodes->listnew_fixed;
+    foreach my $obj ($me, @lnf) { $obj->fillin }
+    diag explain { new_cgi => $me, listnew_fixed => \@lnf };
+
     return 0;
 }
 
