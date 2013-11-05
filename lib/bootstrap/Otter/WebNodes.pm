@@ -60,12 +60,18 @@ sub new_cgi {
 
     $cgi ||= CGI->new;
 
+    my $webdir = Otter::Paths->webdir;
+    my $tmpdir =
+      (($webdir =~ m{^(/www)(/.+)$})
+       ? "$1/tmp$2" # works for webteam VMs
+       : undef); # can't guess, ->fillin will fail
+
     my %new =
       (vhost => $cgi->virtual_host,
        vport => $cgi->virtual_port,
-       webdir => Otter::Paths->webdir,
+       webdir => $webdir,
+       webtmpdir => $tmpdir,
        provenance => 'new_cgi',
-#       webtmpdir # could guess it, blank will error
 #       type # unknown, will calculate
       );
 
@@ -352,6 +358,9 @@ sub type {
         return $1;
     } elsif ($self->vhost =~ m{\.(sandbox|staging|dev)\.sanger\.ac\.uk$}) {
         return $1;
+    } elsif ($self->vhost =~ m{^(otter|www)\.sanger\.ac\.uk$}) {
+        # www. : unlikely
+        return 'live';
     } else {
         return 'sandbox';
     }
