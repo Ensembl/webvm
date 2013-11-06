@@ -141,7 +141,7 @@ sub show_tests {
     }
 
     # Extra data to pass
-    my %data;
+    my %data = (timeout => 60_000);
     # Cookies: we need to give Otter Server tests something valid.
     # Might need to pass more later, but limit it for now.
     my @cookie = grep { $_ eq 'WTSISignOn' } $q->cookie;
