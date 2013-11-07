@@ -1,0 +1,111 @@
+#! /usr/bin/perl
+
+use strict;
+use warnings;
+
+=head1 NAME
+
+webvm-acl-check - verify that external URLs are blocked
+
+=head1 DESCRIPTION
+
+In the apparent absence of
+
+=over 4
+
+=item * a long-term reliable way to test whether requests originate
+outside the organisation (RT#359588), or
+
+=item * a way for an internal selftest script to "make a request from
+outside" (RT#360994)
+
+=back
+
+this is a workaround: hang it off a cronjob on somebody's home
+machine, it will let us know if there is a problem.
+
+It is not intended to run inside WTSI, though it should work.
+
+=head2 Suggested crontab
+
+Not too frequently, to avoid noise when the answer is "500 It broke".
+
+ 17 9,13,17   * * Mon-Fri  $HOME/bin/webvm-acl-check        matthew@work.t8o.org anacode@sanger.ac.uk  http://otter.sanger.ac.uk/cgi-bin/printenv 403
+ 17 8         1 * *        $HOME/bin/webvm-acl-check --send matthew@work.t8o.org     mca@sanger.ac.uk  http://otter.sanger.ac.uk/cgi-bin/printenv 403
+
+=cut
+
+use LWP::UserAgent;
+use Mail::Send;
+
+sub main {
+    my (@opt) = @_;
+    my $prog = $0;
+    $prog =~ s{^.*/}{};
+
+    my @orig_opt = @opt;
+    my $do_send = 0;
+    $do_send = shift @opt if @opt && $opt[0] eq '--send';
+
+    if (4 == @opt) {
+        my ($from, $to, $url, $code) = @opt;
+        die "Bad args (@opt)" unless $code =~ /^\d{3}$/ && $url =~ m{^https?:};
+        my $resp = do_fetch($url);
+        my $got = $resp->code;
+        my $why;
+        $why = 'Gave --send' if $do_send;
+        $why = "Got code $got, wanted $code" unless $got eq $code;
+        if ($why) {
+            send_mail(Subject => "$prog: $got $url",
+                      To => $to,
+                      [ From => $from,
+                        'X-Program' => "$0 @orig_opt",
+                      ], "$why\n\n".show_resp($resp));
+        }
+    } else {
+        die "Syntax: $0 [ --send ] <from> <to> <url> <code>\n
+  --send        Always send mail.  Useful to confirm that this works.
+
+  Fetch <url> and unless the response is <code>
+    email the result to <to>, setting sender <from>\n";
+    }
+
+    return 0;
+}
+
+sub do_fetch {
+    my ($url) = @_;
+    my $ua = LWP::UserAgent->new;
+    $ua->agent("$0 ");
+    $ua->env_proxy;
+    my $resp = $ua->get($url);
+    return $resp;
+}
+
+sub show_resp {
+    my ($resp) = @_;
+    return join "\n",
+      ($resp->request->as_string,
+       $resp->status_line, $resp->headers_as_string, $resp->decoded_content);
+}
+
+sub send_mail {
+    my (@spec) = @_;
+    my $body = pop @spec;
+    my $headers = pop @spec;
+
+    my $msg = Mail::Send->new(@spec);
+    for (my $i=0; $i<@$headers; $i+=2) {
+        $msg->set($headers->[$i] => $headers->[$i+1]);
+    }
+    my $fh = $msg->open;
+
+    print {$fh} $body;
+    close $fh
+      or die "Couldn't send whole message: $!";
+
+    return ();
+}
+
+
+exit main(@ARGV);
