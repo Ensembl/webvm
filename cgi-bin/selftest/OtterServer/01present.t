@@ -44,14 +44,18 @@ sub otter_server_tt {
     push @part,  $version < 73 ? 'get_otter_config' : 'get_config?key=otter_config';
     plan tests => scalar @part;
 
-    my $server_here = Otter::WebNodes->new_cgi->base_uri;
+    my $me = Otter::WebNodes->new_cgi;
+    my $is_sandbox = $me->type eq 'sandbox'; # causes leniency
+    my $server_here = $me->base_uri;
     my $otter = URI->new_abs("/cgi-bin/otter/$version", $server_here);
 
     foreach my $part (@part) {
         my $uri = "$otter/$part";
         my $resp = $ua->get($uri);
         if ($part eq 'test' && $resp->code eq '410') {
-            ok(1, $uri);
+            local $TODO;
+            $TODO = $is_sandbox ? 'this is sandbox' : undef;
+            fail("410 Gone - $uri");
           SKIP: {
                 skip "v$version is 410 Gone", @part - 1;
             }
