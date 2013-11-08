@@ -171,7 +171,12 @@ sub show_tests {
  <style type="text/css">$css</style>
  <link rel="stylesheet" type="text/css" href="/HTtapTP/httaptp.css">
 </head>
-<body><h1> Web server TAPs </h1>
+<body>
+ <div class="tap-compact tap-key">
+   <p> Legend </p>
+ </div>
+ <h1> Web server TAPs </h1>
+ <br clear="both" />
 
 <table class="tests tap-compact" data-tap-data="$hdata">
  @col
@@ -213,6 +218,34 @@ sub css_txt {
      */
     background: #b0d0ff;
     /* border: 3px grey solid; * DNW in FF 20*/
+  }
+
+  div.tap-key {
+    margin: 0;
+    padding: 0;
+    float:right;
+    font-size: 80%;
+    border: thin grey solid;
+    width: 20%;
+  }
+  div.tap-key p {
+    margin: 0.25ex;
+    font-weight: bold;
+    text-align: center;
+  }
+  div.tap-key ol {
+    padding: 0;
+    margin: 0;
+  }
+  div.tap-key ol li {
+    display: inline-block;
+    padding: 0.1ex;
+    margin: 0.2ex;
+    width: 22%;
+    border: none;
+  }
+  div.tap-key ol li span {
+    font-size: 60%
   }
 CSS
 }
