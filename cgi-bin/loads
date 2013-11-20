@@ -1,0 +1,158 @@
+#! /usr/bin/perl -T
+use strict;
+use warnings;
+
+BEGIN { use lib ($ENV{OTTER_PERL_INC} || q{}) =~ m{([^:]+)}g }
+use Otter::PerlVersion;
+
+use URI::Escape qw( uri_escape );
+use CGI 'escapeHTML';
+use List::MoreUtils 'uniq';
+
+use Otter::WebNodes;
+
+
+=head1 NAME
+
+loads (CGI) - pull some opsview load graphs into a browser
+
+=head1 DESCRIPTION
+
+This generates HTML using
+
+=over 4
+
+=item 1.
+
+Simple template for an Opsview load graph, extracted from the
+"(yeallow star) Link" feature of
+C<https://opsview.internal.sanger.ac.uk/graph?...>
+
+=item 2.
+
+List of hostnames from L<Otter::WebNodes>.
+
+=back
+
+=head1 AUTHOR
+
+mca@sanger.ac.uk
+
+=cut
+
+
+sub main {
+
+    # Hostnames, live ones first
+    my @host = map { $_->is_frontend ? () : ($_->vhost) }
+      sort { ($b->type eq 'live') <=> ($a->type eq 'live') ||
+               $a->vhost cmp $b->vhost }
+        Otter::WebNodes->listnew_fixed;
+
+    # Generate page for them
+    my $q = CGI->new;
+    print $q->header(-type=>'text/html');
+    print page_for( uniq(@host) );
+
+    return 0;
+}
+
+
+sub page_for {
+    my @host = @_;
+
+    my ($w, $h) = (512, 400);
+    my @igraph = map { host_iframe($_, $w, $h) } @host;
+
+    my $css = css_txt($w, $h);
+    return <<"DOC";
+<html>
+<head>
+ <title> Web server load average graphs </title>
+ <style type="text/css">$css</style>
+</head>
+<body>
+ <h1> Web server load average graphs </h1>
+ <ul>
+  <li> You will need to have <a href="https://opsview.internal.sanger.ac.uk/user/preference">logged in</a> for these graphs and links to work. </li>
+  <li> The <a href="https://opsview.internal.sanger.ac.uk/viewport/otter"> Otter viewport </a> lists all our hosts and services. </li>
+ </ul>
+
+ @igraph
+
+</body></html>
+DOC
+}
+
+sub host_iframe {
+    my ($host, $w, $h) = @_;
+
+    $host =~ s{\..*$}{}; # opsview uses short hostnames
+    my $qhost = uri_escape($host);
+
+    my $opsview_base = 'https://opsview.internal.sanger.ac.uk';
+    my $iframe_code_pasted_from_opsview = <<PASTE;
+<iframe width='721' height='321' style='overflow: hidden;' frameborder='0' scrolling='0' marginheight='0' marginwidth='0' src='/graph?style=embed&state=o05load5of-86400000.00000e0.000000000000nof0.0504651620370f0.584620370370405load5n00032fweb-otterlive-03%3A%3ASNMP%20Unix%20Load%20Average%3A%3Aload130web-otterlive-03%3A%3ASNMP%20Unix%20Load%20Average%3A%3Aload152fweb-otterlive-03%3A%3ASNMP%20Unix%20Load%20Average%3A%3Aload50003o1no1no1n05linesonn1o011'></iframe><br /><small><a href='/graph?style=singleton&state=o05load5of-86400000.00000e0.000000000000nof0.0504651620370f0.584620370370405load5n00032fweb-otterlive-03%3A%3ASNMP%20Unix%20Load%20Average%3A%3Aload130web-otterlive-03%3A%3ASNMP%20Unix%20Load%20Average%3A%3Aload152fweb-otterlive-03%3A%3ASNMP%20Unix%20Load%20Average%3A%3Aload50003o1no1no1n05linesonn1o011'>View larger graph</a></small>
+PASTE
+
+    # Re-use it for new host
+    my $out = $iframe_code_pasted_from_opsview;
+
+    # Example above encodes the lengths of strings like
+    # 'web-otterlive-03::SNMP Unix Load Average::load1' (47 chr)
+    # in hex just before the string.
+    #
+    # URI encoding is done _after_ the string lengths.
+    #
+    # We need to adjust that for chosen hostname.
+    # This is done by a hasty bodge, which looks quite brittle.
+    $out =~ s{([0-9a-f]{2})(web-otterlive-03)}{hexlen_fixed($1, $2, $host)}eg;
+
+    # Fix URL base
+    $out =~ s{( (?:src|href)=['"]?)/(graph)}{$1$opsview_base/$2}g;
+
+    # Replace the link
+    $out =~ s{<a href='[^']+'>}{<a href="$opsview_base/graph?service=SNMP+Unix+Load+Average&host=$qhost">};
+
+    # Fix size, with wasted space I can't css away from here
+    $out =~ s{ (width|height)=['"]?\d+["']?}{ $1="100%"}g;
+    $w -= 2*30; # 60: L+R wasted width
+    $h -= 88 + 30; # 88: divs above, 30 margin below
+    $out =~ s{(05lines)onn1(o011)}{sprintf('%so3%03x3%03x1%s', $1, $w, $h, $2)}e;
+    # o: two values are expected, by the context
+    # 3: 3-digit hex value follows (two of these)
+    # 1: for whatever the following value is
+
+    $out = qq{ <div class="ovgraph"> $out </div> \n};
+    return $out;
+}
+
+sub hexlen_fixed {
+    my ($oldlen, $oldhost, $newhost) = @_;
+    my $newlen = hex($oldlen) - length($oldhost) + length($newhost);
+    return sprintf('%02x%s', $newlen, uri_escape($newhost));
+}
+
+
+sub css_txt {
+    my ($w, $h) = @_;
+
+    return <<"CSS";
+.ovgraph {
+  display: inline-block;
+  width: ${w}px;
+  height: ${h}px;
+}
+
+
+/* styling the iframe does not work, cross domain */
+.ovgraph iframe #main_content { padding: 0 }
+.ovgraph iframe #wrapper_top_push_down,
+.ovgraph iframe #wrapper_page_nav
+ { display: none }
+
+CSS
+}
+
+
+exit main();
