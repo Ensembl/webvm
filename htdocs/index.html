@@ -1,9 +1,18 @@
 <html><body><h1>It works!</h1>
 <p>This is the default web page for this
-<a href="http://mediawiki.internal.sanger.ac.uk/wiki/index.php/Anacode:_Web_VMs">Anacode</a> server.</p>
+ <a href="http://mediawiki.internal.sanger.ac.uk/wiki/index.php/Anacode:_Web_VMs">Anacode</a> server.
+ It should be internal (private to WTSI).
+</p>
 
 <p> When DEVEL, internal users can see server
  <a href="/server-status">status</a> and
  <a href="/server-info">info</a>.</p>
+
+<p> Other diagnostics are </p>
+<ul>
+ <li> <a href="cgi-bin/taps"> The self-tests. </a>
+  They require some Javascript support on the generating backend. </li>
+ <li> <a href="cgi-bin/loads"> System loadavg graphs </a> embedded from Opsview. </li>
+</ul>
 
 </body></html>
