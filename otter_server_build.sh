@@ -32,7 +32,12 @@ OTT_DEST="$( cd $( dirname $0 ); pwd )"
 
 
 # Manage a temporary git clone
-EOCLONE="$( mktemp -d --tmpdir=/dev/shm ens-ott-serv.XXXXXX )"
+if [ -d /dev/shm ]; then
+    tmpdir=/dev/shm
+else
+    tmpdir=/tmp
+fi
+EOCLONE="$( mktemp -d $tmpdir/ens-ott-serv.XXXXXX )"
 eoclone_cleanup() {
     if [ -n "$EOCLONE" ] && [ -d "$EOCLONE/.git" ] && [ -f "$EOCLONE/dist/conf/version_major" ]; then
         printf '\nTidying up\n'
@@ -74,7 +79,11 @@ for VSN in $BUILD_VSNS; do
         git log -1 --format=fuller --decorate | sedent
         export otter_nfswub="$OTT_DEST"
         vsn_non_path=${VSN//\//.}
-        logfile="$( mktemp --tmpdir=$EOCLONE build-log.$vsn_non_path.XXXXXX )"
+        logfile="$( mktemp $EOCLONE/build-log.$vsn_non_path.XXXXXX )"
+        if [ -n "$NO_BUILD_LOG" ]; then
+            logdir="$( mktemp -d $EOCLONE/eo-build-log.$vsn_non_path.XXXXXX )"
+            export build_log="$logdir"
+        fi
         if otterlace_build --server-only > $logfile 2>&1; then
             echo OK
         else
