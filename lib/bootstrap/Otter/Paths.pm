@@ -285,9 +285,9 @@ sub ensembl {
     # When wondering how it used to work, git-log is your friend.
     #
     # Right now, we take whatever is present.
-    my @part = map { m{^ensembl} ? "$_/modules" : $_ }
-      map { m{^(ensembl[-a-z0-9_]*)$}
-              ? $1 : die "untaint failed: unexpected '$_' in $ensembl_root/" }
+    my @part = map { m{^(ensembl[-a-z0-9_]*)$} ? "$1/modules" :
+                       die "untaint failed: unexpected '$_' in $ensembl_root/" }
+      grep { m{^ensembl} }
         _readdir($ensembl_root);
     my @lib = map { "$ensembl_root/$_" } @part;
 
