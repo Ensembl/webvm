@@ -87,5 +87,8 @@ Bio::Das::Lite
 # pipeline-deps - for sandbox
 GraphViz2
 
+# webvm
+Sys::LoadAvg
+
 EOF
 )
