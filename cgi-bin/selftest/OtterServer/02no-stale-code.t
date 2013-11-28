@@ -60,13 +60,12 @@ sub otter_server_tt {
 
         ### What is installed here?
         #
-        my ($ciid_len, $got_ciid);
+        my ($ciid_len, $got_ciid) = (8);
         my $br = "humpub-branch-$version";
         if ($code_vsn =~ m{^humpub-release-(\d+)-(\d+)$}) {
             # Exactly tagged (humpub-release-76-06).
             # Convert to ciid using gitweb.
             my $ref = "refs/tags/$code_vsn";
-            $ciid_len = 8;
             ($got_ciid) = $lookup->latest_ciid($repo, $ref, $ciid_len);
         } elsif (my ($what, $ciid) = $code_vsn =~
                  m{^humpub-release-\Q$version\E-(\w+)-\d+-g([a-f0-9]{4,40})$}) {
@@ -76,9 +75,15 @@ sub otter_server_tt {
               && $version eq Bio::Otter::Version->version;
             $got_ciid = $ciid;
             $ciid_len = length($ciid);
+        } elsif ($code_vsn eq "humpub-release-$version-dev") {
+            # first commit on new dev branch, ciid is not available
+            # because Bio::Otter::Git didn't record that
+            $br = 'master';
+            $got_ciid = 'unknown:first_on_new_dev_branch';
         } else {
             # unrecognised, probably fail
-            $got_ciid = $code_vsn;
+            $br = 'master';
+            $got_ciid = "unknown:$code_vsn";
         }
 
         ### What is latest in central?
