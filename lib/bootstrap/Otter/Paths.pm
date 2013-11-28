@@ -227,8 +227,9 @@ sub _otter_dev {
     my ($libs) = @_;
     my @vsn =
       sort { $a <=> $b }
-        map { /^(\d{2,4})$/ ? ($1) : () } # detaint, numerics only
-          _readdir($libs);
+        grep { -f "$libs/$_/Bio/Otter/Version.pm" } # actually contains files
+          map { /^(\d{2,4})$/ ? ($1) : () } # detaint, numerics only
+            _readdir($libs);
     return $vsn[-1];
 }
 
