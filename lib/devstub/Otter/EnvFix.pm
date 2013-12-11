@@ -36,7 +36,7 @@ sub import {
     $ENV{DOCUMENT_ROOT} = "${otterlace_server_root}/htdocs";
 
     # Feed some bogus-but-safe authentication info to SangerWeb
-    # (provided in sibling file) and Bio::Otter::ServerScriptSupport
+    # (provided in sibling file) and Bio::Otter::Server::Support::Web
     #
     # webvm-cgi-run can pre-load the username on command line.
     # Otherwise, it is safer to avoid names that give uncontrolled
@@ -47,12 +47,12 @@ sub import {
     warn "This is DEVEL mode - bogus authentication ($ENV{BOGUS_AUTH_USERNAME}) in use";
 
     # Error-wrapping is for running on command line (cgi_wrap)
-    $Bio::Otter::ServerScriptSupport::ERROR_WRAPPING_ENABLED =
+    $Bio::Otter::Server::Support::Web::ERROR_WRAPPING_ENABLED =
       $ENV{OTTERLACE_ERROR_WRAPPING_ENABLED} ? 1 : 0
         if defined $ENV{OTTERLACE_ERROR_WRAPPING_ENABLED};
 
     # disable compression
-    $Bio::Otter::ServerScriptSupport::COMPRESSION_ENABLED = 0;
+    $Bio::Otter::Server::Support::Web::COMPRESSION_ENABLED = 0;
 
     return ();
 }
