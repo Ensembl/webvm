@@ -286,7 +286,8 @@ sub ensembl {
     #
     # Right now, we take whatever is present.
     my @part = map { m{^ensembl} ? "$_/modules" : $_ }
-      map { m{^(ensembl[-a-z0-9_]*)$} ? $1 : die "untaint fail $_" }
+      map { m{^(ensembl[-a-z0-9_]*)$}
+              ? $1 : die "untaint failed: unexpected '$_' in $ensembl_root/" }
         _readdir($ensembl_root);
     my @lib = map { "$ensembl_root/$_" } @part;
 
