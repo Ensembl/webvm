@@ -43,8 +43,7 @@ sub main {
 
     my @auth_hdrs = try {
         # see RT#362580
-        auth_hdrs(mca => 'fc48f042c9231ce5bab8e992cf8b14a6306f2c72');
-#        do_login($ua, 'readonly', 'we_dont_have_one');
+        do_login($ua, 'anacode_ro', 'gnMkJR3L');
     } catch {
         diag "Authentication problem: $_";
     };
@@ -175,6 +174,10 @@ sub do_rest {
     if ($method eq 'get') {
         $uri->query_form(\@kvp, ';');
         @kvp = ();
+    } elsif ($method eq 'post') {
+        $hdrs = [ @$hdrs, Content => \@kvp ];
+    } else {
+        die "bad method $method";
     }
 
     my $resp = $ua->$method($uri, Accept => 'application/json', @$hdrs);
@@ -184,7 +187,9 @@ sub do_rest {
 
     my $t = $resp->content_type;
     die "Opsview request to $loc returned content-type $t"
-      unless $t eq 'application/json';
+      unless $t eq 'application/json'
+        or ($loc eq 'login' # bug in Opsview's front end?  I didn't investigate
+            && $t eq 'application/x-www-form-urlencoded');
 
     return decode_json $resp->decoded_content;
 }
