@@ -10,6 +10,7 @@ use JSON 'encode_json';
 use URI;
 use Try::Tiny;
 use File::Find;
+use Digest::SHA 'sha1_hex';
 
 use Otter::WebNodes;
 use Otter::Paths; # just for webdir
@@ -131,7 +132,8 @@ sub show_tests {
             my $uri = URI->new_abs($t, $base);
             my $hname = escapeHTML($name);
             my $huri = escapeHTML($uri);
-            qq{<td data-tap-src="$huri" title="$t on $hname"></td>};
+            my $id = substr(sha1_hex($uri), 0, 5);
+            qq{<td data-tap-src="$huri" title="$t on $hname" id="$id"></td>};
         } @server;
         my $short = $t;
         $short =~ s{^.*?selftest/}{};
@@ -241,8 +243,7 @@ sub css_txt {
     display: inline-block;
     padding: 0.1ex;
     margin: 0.2ex;
-    width: 22%;
-    border: none;
+    width: 21%;
   }
   div.tap-key ol li span {
     font-size: 60%
