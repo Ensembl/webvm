@@ -178,6 +178,7 @@ sub show_tests {
    <p> Legend </p>
  </div>
  <h1> Web server TAPs </h1>
+ <p> via <a href="https://github.com/Anacode/HTtapTP">HTtapTP</a>. </p>
  <br clear="both" />
 
 <table class="tests tap-compact" data-tap-data="$hdata">
