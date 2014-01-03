@@ -120,7 +120,8 @@ sub show_tests {
         my $hk = escapeHTML($name);
         my $hv = escapeHTML($url);
         $hk =~ s{(\.|@)}{$1<wbr>}g; # optional HTML5 word breaks, for where text rotation doesn't work
-        qq{<th scope="col"><a href="$hv">$hk</a></th>};
+        my $id = id_attr($name);
+        qq{<th scope="col" $id><a href="$hv">$hk</a></th>};
     } @server;
     unshift @th_server, qq{<td></td>};
 
@@ -132,13 +133,14 @@ sub show_tests {
             my $uri = URI->new_abs($t, $base);
             my $hname = escapeHTML($name);
             my $huri = escapeHTML($uri);
-            my $id = substr(sha1_hex($uri), 0, 5);
-            qq{<td data-tap-src="$huri" title="$t on $hname" id="$id"></td>};
+            my $id = id_attr($uri);
+            qq{<td data-tap-src="$huri" title="$t on $hname" $id></td>};
         } @server;
         my $short = $t;
         $short =~ s{^.*?selftest/}{};
         my $hshort = escapeHTML($short);
-        unshift @td, qq{<th scope="row">$hshort</th>};
+        my $id = id_attr($short);
+        unshift @td, qq{<th scope="row" $id>$hshort</th>};
         push @tr_tests, qq{ <tr>@td</tr>\n};
     }
 
@@ -195,6 +197,12 @@ sub show_tests {
 DOC
 }
 
+sub id_attr {
+    my ($what) = @_;
+    my $id = substr(sha1_hex($what), 0, 5);
+    return qq{id="$id"};
+}
+
 sub css_txt {
     return <<CSS;
   table.tests {
@@ -221,6 +229,10 @@ sub css_txt {
      */
     background: #b0d0ff;
     /* border: 3px grey solid; * DNW in FF 20*/
+  }
+
+  th:target {
+    border: 0.75ex black double; /* matches HTtapTP.css */
   }
 
   div.tap-key {
