@@ -26,8 +26,14 @@ use Try::Tiny;
 
 
 sub loadavg {
-    # Linux only
-    my @load = (split /\s+/, slurp('/proc/loadavg'))[0,1,2]; # 1min, 5min, 15min
+    my @load;
+    if ( -r '/proc/loadavg' ) {
+        @load = (split /\s+/, slurp('/proc/loadavg'))[0,1,2]; # 1min, 5min, 15min
+    } elsif ( try { require Sys::LoadAvg; } ) {
+        @load = Sys::LoadAvg::loadavg();
+    } else {
+        @load = ( 'load unavailable' );
+    }
     return @load;
 }
 
