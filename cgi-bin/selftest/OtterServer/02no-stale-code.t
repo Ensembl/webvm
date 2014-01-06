@@ -14,6 +14,8 @@ use Bio::Otter::Version;
 use Bio::Otter::Server::Config; # to find the designations
 use Otter::WebNodes;
 use WebVM::GitLatest;
+use File::Slurp 'read_dir';
+use List::MoreUtils 'uniq';
 
 
 my ($version, $lookup);
@@ -24,11 +26,15 @@ sub main {
     # Are we live or dev?
     my $host_type = Otter::WebNodes->new_cgi->type;
 
-    # Which Otter versions are expected
+    # Which Otter versions are expected?
     my @version = Bio::Otter::Server::Config->extant_versions;
     cmp_ok(scalar @version,
            '>', 1, # live & dev
            'some Otter Server versions');
+
+    # What else is kicking around?
+    my @more = (vsn_dir("lib/otter"), vsn_dir("cgi-bin/otter"));
+    @version = sort { $a <=> $b } uniq(@version, @more);
 
     $lookup = WebVM::GitLatest->new;
 
@@ -45,6 +51,15 @@ sub main {
         }
     };
     return 0;
+}
+
+sub vsn_dir {
+    my ($rel_path) = @_;
+    my $otterlace_server_root = Otter::Paths->code_root;
+    my $src = "$otterlace_server_root/$rel_path";
+    my @vsn = grep { /^\d{2,4}$/ && -d "$src/$_" } read_dir($src);
+    die unless wantarray;
+    return @vsn;
 }
 
 
@@ -70,9 +85,10 @@ sub otter_server_tt {
         } elsif (my ($what, $ciid) = $code_vsn =~
                  m{^humpub-release-\Q$version\E-(\w+)-\d+-g([a-f0-9]{4,40})$}) {
             # Dev (humpub-release-78-dev-28-gf676a72)
-            # or release-plus (humpub-release-75-24-1-g43fe0be)
+            # or release-plus (humpub-release-76-06-4-g660a0f2)
             $br = 'master' if $what eq 'dev'
-              && $version eq Bio::Otter::Version->version;
+              && Bio::Otter::Version->version # as provided by Otter::Paths
+                eq $version;
             $got_ciid = $ciid;
             $ciid_len = length($ciid);
         } elsif ($code_vsn eq "humpub-release-$version-dev") {
@@ -89,10 +105,16 @@ sub otter_server_tt {
         ### What is latest in central?
         #
         my @want = $lookup->latest_ciid($repo, "refs/heads/$br", $ciid_len || 8);
-
+        if (!@want && $br ne 'master') {
+            my $v_dev = Bio::Otter::Version->version;
+            diag "Otter::Paths gave me $v_dev as the dev version,\n".
+              "but using master because I found no commits on $br";
+            $br = 'master';
+            @want = $lookup->latest_ciid($repo, "refs/heads/$br", $ciid_len || 8);
+        }
 
         # Compare
-        my $want_ciid = $want[0];
+        my $want_ciid = @want ? $want[0] : 'unknown-bad-want_ciid';
         my $ok = is($got_ciid, $want_ciid, "Otter $version at head of branch $br ?");
         diag "Libs for otter$version are $code_vsn" if !$ok;
         diag( WebVM::GitLatest->diagnose($got_ciid, @want) ) if !$ok && $ciid_len;
@@ -128,7 +150,7 @@ CODE
         # ok
     } elsif (0 == $! && 0x200 == $? && $out =~
              /Cannot find Otter Server.*Available are (\([a-z0-9 ]+\))/s) {
-        # error from Otte::Paths, quite likely in sandbox
+        # error from Otter::Paths, quite likely in sandbox
         $out = "only have $1";
     } else {
         # fail
