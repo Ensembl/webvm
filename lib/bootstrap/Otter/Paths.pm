@@ -146,8 +146,8 @@ sub core {
       ('.../SHARED_docs/lib/core',
        [],
        localdeps().'/SHARED.core',
-       '/nfs/WWWdev/SHARED_docs/lib/core',
-       '/nfs/WWW/SHARED_docs/lib/core');
+       # ...or recipe for alternative (e.g. during development) copies..?
+      );
 
 # real SangerPaths qw(core) provides all of
 #    a) /WWW/SHARED_docs/lib/core
@@ -199,8 +199,8 @@ sub bioperl {
     my $version = $known_vsn{$vsn_short} || $vsn_short;
     my @deps =
       (localdeps(),
-       '/nfs/WWWdev/SHARED_docs/lib',
-       '/nfs/WWW/SHARED_docs/lib');
+       # ...or recipe for alternative (e.g. during development) copies..?
+      );
 
     my $bioperl = _wantdir
       ("Bioperl $vsn_short ($version)",
@@ -270,8 +270,8 @@ sub ensembl {
 
     my @deps =
       (localdeps(), # our local copy
-       '/nfs/WWWdev/SHARED_docs/lib', # webteam central, seen from deskpro
-       '/nfs/WWW/SHARED_docs/lib'); # webteam central, seen from old webserver
+       # ...or recipe for alternative (e.g. during development) copies..?
+      );
 
     my $ensembl_root = _wantdir
       ("Ensembl v$ensembl_version",
@@ -312,8 +312,8 @@ sub humpub {
       ("humpub modules",
        [],
        localdeps().'/humpub', # our local copy
-       '/nfs/WWWdev/SANGER_docs/lib/humpub',
-       '/nfs/WWW/SANGER_docs/lib/humpub');
+       # ...or recipe for alternative (e.g. during development) copies..?
+      );
 
     die "humpub at $humpub is incomplete" unless -d "$humpub/Hum";
 
