@@ -53,6 +53,7 @@ sub main {
         print qq{<html> <head><title> Web server TAPs </title></head>
 <body><h1> Web server TAPs </h1>
 <p> Necessary client libraries for HTtapTP are not available </p>
+<p> Back to <a href="/"> top </a>. </p>
 <pre class="error">$herr</pre>
 <h2> Diagnostics present </h2>
 <ul>@ht_li</ul>
@@ -181,6 +182,7 @@ sub show_tests {
  </div>
  <h1> Web server TAPs </h1>
  <p> via <a href="https://github.com/Anacode/HTtapTP">HTtapTP</a>. </p>
+ <p> Back to <a href="/"> top </a>. </p>
  <br clear="both" />
 
 <table class="tests tap-compact" data-tap-data="$hdata">
