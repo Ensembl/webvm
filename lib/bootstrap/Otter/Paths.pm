@@ -18,6 +18,35 @@ based on L<Module::PortablePath>.
 It is small, stand-alone and intended to be installed as part of the
 webserver configuration.
 
+=head2 Import tags
+
+All import tags will make specified libraries are available on C<@INC>
+
+=over 4
+
+=item intweb, core, humpub
+
+They take no suffix.  There is only one current version.
+
+=item bioperl
+
+Takes an optional suffix for the version.
+
+=item ensembl
+
+Requires numeric suffix for the version.
+
+=item otter
+
+Accepts numeric suffix for the version, or C<-dev> to indicate the
+largest plain (non-feature build) numeric version present.
+
+Also may be given bare, in which case the pathname of the calling
+script must make obvious the necessary version number, and feature
+branch name if any.
+
+=back
+
 
 =head1 CLASS METHODS
 
@@ -217,10 +246,31 @@ sub otter {
     my ($pkg, $otter_version) = @_;
     my $otterlace_server_root = $pkg->code_root;
     my $libs = "$otterlace_server_root/lib/otter";
-    $otter_version = _otter_dev($libs) if $otter_version eq '-dev';
+    if ($otter_version eq '') {
+        # We have to derive it.  Happens since ensembl-otter v80, and
+        # supports feature branches.
+        $otter_version = _otter_auto($libs);
+    } elsif ($otter_version eq '-dev') {
+        # some ad-hoc script, just wants the latest Otter libs
+        $otter_version = _otter_dev($libs);
+    } elsif ($otter_version =~ /^\d{2,4}$/) {
+        # looks like a major version number (no feature)
+    } else {
+        die "Cannot derive major version number or lib/otter path from otter '$otter_version'";
+    }
     return _wantdir("Otter Server v$otter_version",
-                    [ qr{(otter)/(\d+)}, $libs ],
+                    [ qr{(otter)/(\d+(_[^/]+)?)}, $libs ],
                     "$libs/$otter_version");
+}
+
+sub _otter_auto {
+    my ($libs) = @_;
+    my ($maj_feat) = $0 =~
+      m{/cgi-bin/otter/(\d{2,4}(?:_[a-zA-Z][-._a-zA-Z0-9]{0,32})?)/};
+    if (!defined $maj_feat) {
+        die "Cannot derive major version number or lib/otter path from \$0";
+    }
+    return $maj_feat
 }
 
 sub _otter_dev {
