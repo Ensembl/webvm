@@ -258,6 +258,12 @@ sub otter {
     } else {
         die "Cannot derive major version number or lib/otter path from otter '$otter_version'";
     }
+
+    my $put = \$Bio::Otter::Git::WANT_MAJ_FEAT; # for Bio::Otter::Git->assert_match
+    die "WANT_MAJ_FEAT already set to $$put, now want $otter_version"
+      if defined $$put;
+    $$put = $otter_version;
+
     return _wantdir("Otter Server v$otter_version",
                     [ qr{(otter)/(\d+(_[^/]+)?)}, $libs ],
                     "$libs/$otter_version");
