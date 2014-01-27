@@ -63,9 +63,6 @@ git clone -o $REPO_NAME -q $REPO_URL "$EOCLONE"
 echo
 cd "$EOCLONE"
 
-# detached head
-git checkout -q $( git log -1 --format=%H HEAD )
-
 sedent(){
     sed -e 's/^/  /'
 }
@@ -75,7 +72,14 @@ for VSN in $BUILD_VSNS; do
     printf '\n\n\nBuilding for %s\n' "$VSN"
     cd "$EOCLONE"
     rev=$REPO_NAME/$VSN
-    if git reset -q --hard $rev; then
+
+    if git rev-parse -q --verify "$VSN"; then
+        # branch exists locally, delete it first
+        git checkout -q $( git rev-parse HEAD ) # detach head
+        git branch -D "$VSN"
+    fi
+
+    if git checkout -q -f -b "$VSN" $rev; then
         git log -1 --format=fuller --decorate | sedent
         export otter_nfswub="$OTT_DEST"
         vsn_non_path=${VSN//\//.}
