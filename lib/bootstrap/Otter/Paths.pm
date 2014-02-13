@@ -340,12 +340,14 @@ sub ensembl {
     #
     # When wondering how it used to work, git-log is your friend.
     #
-    # Right now, we take whatever is present.
+    # Right now, we take whatever directories are present.
     my @part = map { m{^(ensembl[-a-z0-9_]*)$} ? "$1/modules" :
                        die "untaint failed: unexpected '$_' in $ensembl_root/" }
-      grep { m{^ensembl} }
+      grep { m{^ensembl} && -d "$ensembl_root/$_" }
         _readdir($ensembl_root);
-    my @lib = map { "$ensembl_root/$_" } @part;
+    my @lib = map { "$ensembl_root/$_" }
+      reverse       # to have ensembl before ensembl-*
+        sort @part; # _readdir gives us no ordering
 
     my @want_part = qw( ensembl-variation/modules ensembl/modules );
     my @missing = grep {
