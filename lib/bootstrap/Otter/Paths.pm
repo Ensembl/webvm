@@ -24,7 +24,7 @@ All import tags will make specified libraries are available on C<@INC>
 
 =over 4
 
-=item intweb, core, humpub
+=item intweb, core
 
 They take no suffix.  There is only one current version.
 
@@ -58,7 +58,7 @@ sub import {
 
     my @lib;
     foreach my $tag (@tags) {
-        if (my ($what, $vsn) = $tag =~ m{^(bioperl|core|ensembl|humpub|intweb|otter)(\d+|-dev|)$}) {
+        if (my ($what, $vsn) = $tag =~ m{^(bioperl|core|ensembl|intweb|otter)(\d+|-dev|)$}) {
             push @lib, $package->$what($vsn);
         } elsif (($what) = $tag =~ m{^(\w+-[0-9]{1,3}[.0-9]{0,10})$}) {
             my $ld = localdeps();
@@ -357,25 +357,6 @@ sub ensembl {
     die "Ensembl v$ensembl_version is missing components (@missing)" if @missing;
 
     return @lib;
-}
-
-
-# humpub is only used by the Otter Server during scripts/apache/test
-# when we try to load everything (including client libraries)
-sub humpub {
-    my ($pkg, $humpub_version) = @_;
-    die "humpub not yet versioned" if $humpub_version ne '';
-
-    my $humpub = _wantdir
-      ("humpub modules",
-       [],
-       localdeps().'/humpub', # our local copy
-       # ...or recipe for alternative (e.g. during development) copies..?
-      );
-
-    die "humpub at $humpub is incomplete" unless -d "$humpub/Hum";
-
-    return $humpub;
 }
 
 
