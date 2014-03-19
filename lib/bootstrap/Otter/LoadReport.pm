@@ -19,18 +19,21 @@ when load is heavy.
 
 =cut
 
-
-use File::Slurp qw( slurp );
 use Time::HiRes qw( tv_interval gettimeofday );
 use Try::Tiny;
 
 
 sub loadavg {
     my @load;
-    if ( -r '/proc/loadavg' ) {
-        @load = (split /\s+/, slurp('/proc/loadavg'))[0,1,2]; # 1min, 5min, 15min
-    } elsif ( try { require Sys::LoadAvg; } ) {
+    my $linux_fn = '/proc/loadavg';
+    if ( try { require Sys::LoadAvg; } ) {
         @load = Sys::LoadAvg::loadavg();
+    } elsif ( -r $linux_fn ) {
+        if (open my $fh, '<', $linux_fn) {
+            @load = (split /\s+/, scalar <$fh>)[0,1,2]; # 1min, 5min, 15min
+        } else {
+            @load = ("read $linux_fn: $!");
+        }
     } else {
         @load = ( 'load unavailable' );
     }
