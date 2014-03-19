@@ -26,6 +26,7 @@ This module is "slightly legacy", in that CGI scripts can switch from
 to
 
  use Otter::PerlVersion;
+ use Otter::LoadReport;
  use Otter::Paths qw( foo );
 
 once they no longer run on old webservers.
@@ -47,18 +48,12 @@ mca@sanger.ac.uk
 =cut
 
 use Otter::PerlVersion;
-
+use Otter::LoadReport; # for diagnosing load spikes
 
 require Otter::Paths;
 
 sub import {
     my ( $package, @tags ) = @_;
-
-    if ($ENV{APACHE_DEVEL}) {
-        # System load debugging
-        # Probably not needed when SangerPaths gone
-        require Otter::LoadReport;
-    }
 
     return Otter::Paths->import(@tags);
 }
