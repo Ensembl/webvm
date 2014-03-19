@@ -57,7 +57,7 @@ sub show {
     my ($when) = @_;
 
     my @load = loadavg();
-    my @out = (pid => $$, "loadavg (@load)");
+    my @out = (at => $when, loadavg => "(@load)");
 
     if ($t) {
         my @cpu = times();
@@ -65,10 +65,17 @@ sub show {
           (wallclock => sprintf("%.2fs", tv_interval($t)),
            "cpu (@cpu)s",
            ps => run_ps());
+    } else {
+        my $x_fwd = $ENV{HTTP_X_FORWARDED_FOR};
+        $x_fwd = '-' unless defined $x_fwd && $x_fwd ne '';
+        $x_fwd =~ s{([^-_A-Za-z0-9.:,])}{sprintf("%%%02x", ord($1))}eg;
+        push @out,
+          (script => $ENV{SCRIPT_NAME},
+           fwd => $x_fwd);
     }
     $t ||= [ gettimeofday() ];
 
-    print STDERR "$ENV{SCRIPT_NAME} $when: @out\n";
+    print STDERR "pid $$: @out\n";
 
     return;
 }
