@@ -69,7 +69,7 @@ sub main {
 
 sub retro_config_extract {
     # This script first listed config_extract() with no fixup, and
-    # webhosts(1) used the data to drive rsync.
+    # webvm-hosts(1) used the data to drive rsync.
     #
     # Some fixup was necessary to reach all hosts.
     # Then the fixup moved.
