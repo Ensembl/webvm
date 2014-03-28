@@ -66,6 +66,8 @@ sub import {
             die "Expected symlink to valid dir at $expect for '$tag'" unless
               -l $expect && -d $expect && -r _;
             push @lib, $expect;
+        } elsif ($tag eq 'humpub') {
+            warn "Supplying nothing for obsolete tag '$tag'";
         } else {
             die "Failed to supply '$tag'";
         }
