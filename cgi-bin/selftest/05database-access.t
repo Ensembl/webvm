@@ -52,13 +52,20 @@ sub db_tt {
     my ($key, $db) = @_;
     plan tests => 1;
 
+    my %alarm; # protection against ALRM during catch of some other error
+    local $SIG{ALRM} = sub { die "Alarm timeout" if $alarm{want} };
     my $t_db = try {
+        alarm(2);
+        # Delay length is a bit arbitrary, but we have ~20 to get through
+        local $alarm{want} = 1;
         my ($name, $host) = ($db->name, $db->host);
         my $dbh = DBI->connect( $db->spec_DBI );
         my ($t_db) = $dbh->selectrow_array(q{ SELECT unix_timestamp(now()) });
         return $t_db;
     } catch {
         return "ERR:$_";
+    } finally {
+        alarm(0);
     };
 
     if (like($t_db, qr{^\d{8,}$}, "get time from database server $key")) {
