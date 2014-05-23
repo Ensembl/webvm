@@ -90,8 +90,9 @@ sub selfwrap {
         local $ENV{OTTER_PERL_EXE_used} = $want_perl;
         local $ENV{OTTER_PERL_INC_used} = $inc;
 
+        my ($perl, @opt) = split / +/, $want_perl;
         my @cmd = map { detaint($_) }
-          ($want_perl, (map { -I => $_ } @libs), -Tw => $0, @ARGV);
+          ($perl, @opt, (map { -I => $_ } @libs), -Tw => $0, @ARGV);
         { exec @cmd; }
         die "$0: Cannot find OTTER_PERL_EXE=$want_perl for\n @cmd";
     } else {
