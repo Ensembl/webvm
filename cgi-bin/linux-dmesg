@@ -1,0 +1,85 @@
+#! /usr/bin/perl -T
+use strict;
+use warnings;
+
+use Try::Tiny;
+
+#BEGIN { use lib ($ENV{OTTER_PERL_INC} || q{}) =~ m{([^:]+)}g }
+#use Otter::PerlVersion;
+#use Otter::Paths;
+#use WebVM::Util qw( gits_info pipefrom_with );
+
+
+=head1 NAME
+
+cgi-bin/linux-dmesg - return kernel logs
+
+=head1 DESCRIPTION
+
+This script emits in YAML the set of webserver hosts configured by the
+webteam.  The purpose is to avoid relying on a stale copy of the list.
+
+=cut
+
+
+sub main {
+    $ENV{PATH} = '/bin:/usr/bin';
+
+    my ($out, $err) = try {
+        open my $log_fh, '-|', '/bin/dmesg'
+          or die "Need /bin/dmesg (Linux) but $!";
+        my $out = uptime_when($log_fh);
+        my $err = '';
+        close $log_fh
+          or $err = "Error: dmesg call failed, ?=$? !=$!\n";
+        return ($out, $err);
+    } catch {
+        return (undef, "Error: $_");
+    };
+
+    print "Status: 500 Internal Error\n" if $err;
+
+    print "Content-type: text/plain\n\n";
+
+    print "$err\n--------\n" if $err;
+    print @$out if $out;
+
+    return 0;
+}
+
+
+sub uptime_when {
+    my ($log_fn) = @_;
+    my @out;
+
+    open my $upfh, "<", "/proc/uptime"
+      or die "Need /proc/uptime (Linux) but $!";
+    my ($up, undef) = split /\s+/, <$upfh>;
+    my $now = time();
+    close $upfh;
+
+    my $booted = $now - $up;
+    push @out, "Booted at $booted = ".ts($booted)." localtime\n";
+
+    while (my $ln = <$log_fn>) {
+        if ($ln =~ m{^\[ {0,4}(\d+)\.(\d+)\] }) {
+            my ($t, $frac) = ($1, $2);
+            $ln = ts($booted + $t, $frac).": $ln";
+        }
+        push @out, $ln;
+    }
+
+    return \@out;
+}
+
+sub ts {
+    my ($utime, $frac) = @_;
+    my @t = localtime($utime);
+    return sprintf("%04d-%02d-%02dt%02d:%02d:%02d%s",
+		   1900+$t[5], 1+$t[4], $t[3],
+		   @t[2,1,0],
+		   (defined $frac ? ".$frac" : ''));
+}
+
+
+exit main();
