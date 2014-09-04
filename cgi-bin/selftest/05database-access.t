@@ -17,7 +17,7 @@ use Try::Tiny;
 use List::Util qw( min max sum );
 
 sub main {
-    my $D = Bio::Otter::Server::Config->databases;
+    my $D = Bio::Otter::Server::Config->Databases;
     my @essential = qw( otterlive );
     plan tests => @essential + (keys %$D) + 1;
 
