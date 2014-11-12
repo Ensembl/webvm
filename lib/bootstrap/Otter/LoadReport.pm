@@ -81,7 +81,17 @@ sub show {
     return;
 }
 
-BEGIN { show('BEGIN') }
+# Log request like the access_log, so we can link them
+sub accesslog {
+    return unless defined $ENV{REQUEST_METHOD};
+    my $req = join '', $ENV{REQUEST_METHOD}, ' ', $ENV{REQUEST_URI}, ' ', $ENV{SERVER_PROTOCOL};
+    $req =~ s{([^ -\x7F])}{sprintf("\\x%02x", ord($1))}eg;
+    print STDERR "pid $$: $req\n";
+    return;
+}
+
+
+BEGIN { show('BEGIN'); accesslog(); }
 END   { show('END')   }
 
 1;
