@@ -64,6 +64,7 @@ sub show {
         push @out,
           (wallclock => sprintf("%.2fs", tv_interval($t)),
            "cpu (@cpu)s",
+           exit => $?,
            ps => run_ps());
     } else {
         my $x_fwd = $ENV{HTTP_X_FORWARDED_FOR};
