@@ -1,0 +1,21 @@
+#!/usr/bin/perl -Tw
+
+# Author:        mca
+# Group:         anacode
+
+# Proof of concept obsolescence marker.
+#   single file
+#   for any version
+#   covers the entire major version
+#
+# Later could be done via httpd.conf fragment.
+
+use strict;
+use warnings;
+
+my ($v) = ($ENV{SCRIPT_NAME} || $0) =~ m{/([^/]+)$};
+print "Status: 410 Gone - please upgrade Otterlace
+Content-type: text/plain
+
+Please upgrade your Otterlace client.\n
+You are using version $v which is obsolete.\n\n";
