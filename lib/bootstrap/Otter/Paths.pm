@@ -262,7 +262,7 @@ sub _otter_auto {
     if (!defined $maj_feat) {
         die "Cannot derive major version number or lib/otter path from \$0";
     }
-    return $maj_feat
+    return $maj_feat;
 }
 
 sub _otter_dev {
