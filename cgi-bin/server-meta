@@ -9,6 +9,7 @@ use Sys::Hostname 'hostname';
 use Time::HiRes qw( tv_interval gettimeofday );
 
 BEGIN { use lib ($ENV{OTTER_PERL_INC} || q{}) =~ m{([^:]+)}g }
+use Otter::PerlVersion;
 use Otter::Paths;
 use Otter::WebConfig qw( host_svndir );
 use Otter::WebNodes;
