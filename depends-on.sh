@@ -48,6 +48,7 @@ libxml-parser-perl
 libxml-sax-base-perl
 libxml-simple-perl
 libyaml-perl
+liblingua-en-inflect-perl
 
 # old SangerWeb dependency, for Otter Server; also in Otter client
 libconfig-inifiles-perl
