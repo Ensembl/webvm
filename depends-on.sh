@@ -84,6 +84,7 @@ cpan $( grep -vE '^#' <<EOF
 
 # Otter Server
 Bio::Das::Lite
+Text::sprintfn
 
 # pipeline-deps - for sandbox
 GraphViz2
