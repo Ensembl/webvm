@@ -260,7 +260,11 @@ sub _front4 {
 sub __init {
     # XXX: Could look up port numbers in ServerRoot/conf/user/*.conf
     # "Listen" lines but they are fairly static.
-    %PORT = qw( www-core 8000 jgrg 8001 jh13 8002 mca 8003 mg13 8004 );
+    %PORT = (
+        'www-core' => 8000,
+        'jgrg'     => 8001,
+        'mg13'     => 8004,
+        );
 
     $DOMAIN = '.internal.sanger.ac.uk';
 
