@@ -18,6 +18,7 @@ libdbi-perl
 libdevel-globaldestruction-perl
 liberror-perl
 libeval-closure-perl
+libhash-merge-simple-perl
 libhttp-cookies-perl
 libhttp-date-perl
 libhttp-message-perl
@@ -84,6 +85,7 @@ cpan $( grep -vE '^#' <<EOF
 
 # Otter Server
 Bio::Das::Lite
+Data::Rmap
 Text::sprintfn
 
 # pipeline-deps - for sandbox
@@ -91,6 +93,9 @@ GraphViz2
 
 # webvm
 Sys::LoadAvg
+
+# auth
+LWP::Protocol::connect
 
 EOF
 )
