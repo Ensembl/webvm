@@ -264,6 +264,7 @@ sub __init {
         'www-core' => 8000,
         'jgrg'     => 8001,
         'mg13'     => 8004,
+	'zmap'     => 8005,
         );
 
     $DOMAIN = '.internal.sanger.ac.uk';
