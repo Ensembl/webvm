@@ -1,1 +1,165 @@
-../../../server-config/species.dat
+# NB. if removing a dataset, to prevent errors
+# first remove all references from access.yaml
+
+[defaults]
+DBSPEC      otterlive_rw
+DNA_DBSPEC  otterlive_rw
+
+[human]
+DBNAME      loutre_human
+
+[mouse]
+DBNAME      loutre_mouse
+
+[cow]
+DBNAME      loutre_cow
+
+[rat]
+DBNAME      loutre_rat
+
+[sheep]
+DBNAME      loutre_sheep
+
+[gibbon]
+DBNAME      loutre_gibbon
+
+[opossum]
+DBNAME      loutre_opossum
+
+[chimp]
+DBNAME      loutre_chimp
+
+[zebrafish]
+DBNAME      loutre_zebrafish
+
+[pig]
+DBNAME      loutre_pig
+
+[wallaby]
+DBNAME      loutre_wallaby
+
+[gorilla]
+DBNAME      loutre_gorilla
+
+[platypus]
+DBNAME      loutre_platypus
+
+[chicken]
+DBNAME      loutre_chicken
+
+[mus_spretus]
+DBNAME      loutre_mus_spretus
+
+[dog]
+DBNAME      loutre_dog
+
+[tropicalis]
+DBNAME      loutre_tropicalis
+
+[cat]
+DBNAME      loutre_cat
+
+[tomato]
+DBNAME      loutre_tomato
+
+[marmoset]
+DBNAME      loutre_marmoset
+
+[medicago]
+DBNAME      loutre_medicago
+
+[lemur]
+DBNAME      loutre_lemur
+
+[sordaria]
+DBNAME      loutre_sordaria
+
+[tas_devil]
+DBNAME      loutre_tas_devil
+
+[drosophila]
+DBNAME      loutre_drosophila
+
+[c_elegans]
+DBNAME      loutre_c_elegans
+
+[mouse-C57BL-6NJ_v1_test]
+DBNAME      loutre_mus_c57
+
+[mouse-SPRET-EiJ]
+DBNAME      loutre_mus_r_spr
+
+[mouse-PWK-PhJ]
+DBNAME      loutre_mus_r_pwk
+
+[mouse-CAST-EiJ]
+DBNAME      loutre_mus_r_cas
+
+[mouse-WSB-EiJ]
+DBNAME      loutre_mus_r_wsb
+
+[mouse-NZO-HlLtJ]
+DBNAME      loutre_mus_r_nzo
+
+[mouse-C57BL-6NJ]
+DBNAME      loutre_mus_r_c57
+
+[mouse-NOD-ShiLtJ]
+DBNAME      loutre_mus_r_nod
+
+[mouse-FVB-NJ]
+DBNAME      loutre_mus_r_fvb
+
+[mouse-DBA-2J]
+DBNAME      loutre_mus_r_dba
+
+[mouse-CBA-J]
+DBNAME      loutre_mus_r_cba
+
+[mouse-C3H-HeJ]
+DBNAME      loutre_mus_r_c3h
+
+[mouse-AKR-J]
+DBNAME      loutre_mus_r_akr
+
+[mouse-BALB-cJ]
+DBNAME      loutre_mus_r_bal
+
+[mouse-A-J]
+DBNAME      loutre_mus_r_aj
+
+[mouse-LP-J]
+DBNAME      loutre_mus_r_apj
+
+[mouse-129S1-SvImJ]
+DBNAME      loutre_mus_r_129
+
+[human_test]
+DBNAME      jgrg_human_test
+DBSPEC      otterpipe2_rw
+DNA_DBNAME  loutre_human
+DNA_DBSPEC  otterlive
+ALIAS       human
+
+[human_dev]
+DBNAME      jgrg_human_dev
+DBSPEC      otterpipe2_rw
+DNA_DBNAME  loutre_human
+DNA_DBSPEC  otterlive
+ALIAS       human
+
+[mouse_test]
+DBNAME      jgrg_mouse_test
+DBSPEC      otterpipe2_rw
+DNA_DBNAME  loutre_mouse
+DNA_DBSPEC  otterlive
+ALIAS       mouse
+
+[human_test_2]
+DBNAME      jmg_human_test
+DBSPEC      otterpipe2_rw
+DNA_DBNAME  loutre_human
+DNA_DBSPEC  otterlive
+ALIAS       human
+
+

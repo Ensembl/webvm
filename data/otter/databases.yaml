@@ -1,1 +1,83 @@
-../../../server-config/databases.yaml
+# Database server changes need making in several places:
+#
+#   - here
+#   - possibly also in satellite stringy-eval meta keys
+---
+dbspec:
+  ens-livemirror:
+    -host: ens-livemirror.internal.sanger.ac.uk
+    -port: 3306
+    -user: ensro
+  ensdb-archive:
+    -host: ensdb-archive
+    -port: 5304
+    -user: ensro
+  genebuild1:
+    -host: genebuild1.internal.sanger.ac.uk
+    -port: 3306
+    -user: ensro
+  genebuild2:
+    -host: genebuild2.internal.sanger.ac.uk
+    -port: 3306
+    -user: ensro
+  genebuild3:
+    -host: genebuild3.internal.sanger.ac.uk
+    -port: 3306
+    -user: ensro
+  genebuild3_rw:
+    -host: genebuild3.internal.sanger.ac.uk
+    -pass: ensembl
+    -port: 3306
+    -user: ensadmin
+  genebuild4:
+    -host: genebuild4.internal.sanger.ac.uk
+    -port: 3306
+    -user: ensro
+  genebuild4_rw:
+    -host: genebuild4.internal.sanger.ac.uk
+    -pass: ensembl
+    -port: 3306
+    -user: ensadmin
+  genebuild5:
+    -host: genebuild5.internal.sanger.ac.uk
+    -port: 3306
+    -user: ensro
+  genebuild7:
+    -host: genebuild7.internal.sanger.ac.uk
+    -port: 3306
+    -user: ensro
+  otlp_slave:
+    -host: otlp-db-ro
+    -port: 3324
+    -user: ottro
+  otp1_slave:
+    -host: otp1-db-ro
+    -port: 3322
+    -user: ottro
+  otp2_slave:
+    -host: otp2-db-ro
+    -port: 3323
+    -user: ottro
+  otterlive:
+    -host: otterlive
+    -port: 3324
+    -user: ottro
+    -ro_dbspec: otlp_slave
+  otterlive_rw:
+    -host: otterlive
+    -pass: lutralutra
+    -port: 3324
+    -user: ottadmin
+    -ro_dbspec: otlp_slave
+  otterpipe1_rw:
+    -host: otp1-db
+    -pass: lutralutra
+    -port: 3322
+    -user: ottadmin
+    -ro_dbspec: otp1_slave
+  otterpipe2_rw:
+    -host: otp2-db
+    -pass: lutralutra
+    -port: 3323
+    -user: ottadmin
+    -ro_dbspec: otp2_slave
