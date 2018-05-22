@@ -1,1 +1,425 @@
-../../../server-config/access.yaml
+# The anacode user in the annosoft user_group is for tests.
+#
+---
+species_groups:
+  dev:
+    - human_dev
+    - human_test
+  main:
+    - c_elegans
+    - cat
+    - chicken
+    - chimp
+    - cow
+    - dog
+    - drosophila
+    - gibbon
+    - gorilla
+    - human
+    - lemur
+    - marmoset
+    - medicago
+    - mouse
+    - mus_spretus
+    - opossum
+    - pig
+    - platypus
+    - rat
+    - sheep
+    - sordaria
+    - tas_devil
+    - tomato
+    - tropicalis
+    - wallaby
+    - zebrafish
+  mouse_strains:
+    - mouse-SPRET-EiJ
+    - mouse-PWK-PhJ
+    - mouse-CAST-EiJ
+    - mouse-WSB-EiJ
+    - mouse-NZO-HlLtJ
+    - mouse-C57BL-6NJ
+    - mouse-NOD-ShiLtJ
+    - mouse-FVB-NJ
+    - mouse-DBA-2J
+    - mouse-CBA-J
+    - mouse-C3H-HeJ
+    - mouse-AKR-J
+    - mouse-BALB-cJ
+    - mouse-A-J
+    - mouse-LP-J
+    - mouse-129S1-SvImJ
+    - mouse-C57BL-6NJ_v1_test
+  restricted:
+    - human_dev
+    - human_test
+    - mouse_test
+user_groups:
+  havana:
+    write:
+      - :main
+    users:
+      - aeb
+      - af2:
+          write:
+            - human_test_2
+      - al1:
+          write:
+            - :mouse_strains
+      - clb
+      - cs10
+      - dm4
+      - dml
+      - erb:
+          write:
+            - :mouse_strains
+      - gdr
+      - gkl
+      - gm5:
+          write:
+            - :mouse_strains
+      - ib2
+      - jel:
+          write:
+            - :mouse_strains
+            - human_test_2
+      - jh25
+      - jm12:
+          write:
+            - :mouse_strains
+            - human_test_2
+      - jr4
+      - mh19
+      - mms:
+          write:
+            - human_test_2
+      - mpk
+      - mt4
+      - sb7
+      - th2:
+          write:
+            - human_test_2
+      - vb1
+  annotrack:
+    write:
+      - :main
+      - :mouse_strains
+      - human_test
+      - human_test_2
+      - mouse_test
+    users:
+      - jmg
+      - sf5
+  annosoft:
+    comment: The anacode user in the annosoft user_group is for tests.
+    write:
+      - :main
+      - :mouse_strains
+      - human_dev
+      - human_test
+      - mouse_test
+    users:
+      - anacode
+      - jgrg
+      - hav-test
+      - mg13
+      - edgrif
+      - gb10
+      - sm23
+      - zmap
+  anacode_auth_test:
+    users:
+      - pagesmith-test2-mca@t8o.org:
+          write: []
+      - wtsitest1-mca@t8o.org:
+          write: []
+      - wtsi-test-1@test.michaelgray.info:
+          write: []
+      - read-check@fictitious.sanger.ac.uk:
+          read:
+            - :main
+            - :restricted
+            - :dev
+  chicken:
+    comment: small project on chicken
+    write: 
+      - chicken
+    users:
+      - katrina.morris@roslin.ed.ac.uk  
+  pig_irag:
+    comment: as grouped by Jane
+    write:
+      - pig
+    users:
+      - Katherine.Mann@ars.usda.gov
+      - Celine.Chen@ars.usda.gov
+      - Joan.Lunney@ars.usda.gov
+      - Hongbo.Chen@ars.usda.gov
+      - Sam.Abrams@ars.usda.gov
+      - Harry.Dawson@ars.usda.gov
+      - Daniel.Berman@ars.usda.gov
+      - anna.anselmo@tecnoparco.org
+      - bouabid.badaoui@tecnoparco.org
+      - sara.botti@tecnoparco.org
+      - ernstc@msu.edu
+      - ysang@vet.k-state.edu
+      - rchovey@ucdavis.edu
+      - sonteru@iastate.edu
+      - dmbowen@iastate.edu
+      - schwa753@umn.edu
+      - zhqdu@iastate.edu
+      - shzhao@mail.hzau.edu.cn
+      - jhcao@mail.hzau.edu.cn
+      - xiaojingyu1102@webmail.hzau.edu.cn
+      - alan.archibald@roslin.ed.ac.uk
+      - cktuggle@iastate.edu
+      - chris.tuggle@roslin.ed.ac.uk
+      - claire.rogel-gaillard@jouy.inra.fr
+      - elisabetta.giuffra@jouy.inra.fr
+      - huenishi@affrc.go.jp
+      - rcheng@iastate.edu
+      - tinghua@iastate.edu
+      - dario.beraldi@ed.ac.uk
+      - ronan.kapetanovic@roslin.ed.ac.uk
+      - y.takeuchi@ucl.ac.uk
+      - morozumi@staff.or.jp
+      - sinkai@staff.or.jp
+      - toki@staff.or.jp
+      - bertrand.bedhom@jouy.inra.fr
+      - jreecy@iastate.edu:
+          write:
+            - cow
+            - human
+            - mouse
+      - zhu@iastate.edu:
+          write:
+            - cow
+      - maiaa@iastate.edu
+  pig_from_rt:
+    comment: RT:197573 203694 203978 204323 382378 -- mca
+    write:
+      - pig
+    users:
+      - mbystrom@iastate.edu
+      - dciobanu2@unl.edu
+      - marie-laure.endale@jouy.inra.fr
+      - anoop.arya@jouy.inra.fr
+  pig_other:
+    write:
+      - pig
+    users:
+      - anna.esteve@uab.cat
+      - barbara.harlizius@ipg.nl
+      - bfan@iastate.edu
+      - brunner@fbn-dummerstorf.de
+      - christelle.robert@roslin.ed.ac.uk
+      - danxie2@uiuc.edu
+      - david.hume@roslin.ed.ac.uk
+      - emmanuelle.bourneuf@cea.fr
+      - frank.panitz@agrsci.dk
+      - ge2estog@uco.es
+      - gwenola.tosser@toulouse.inra.fr
+      - henrikh.jensen@agrsci.dk
+      - ita-herperma@itacyl.es:
+          write:
+            - cow
+      - ita-rodlazda@itacyl.es
+      - jennifer_michal@wsu.edu
+      - jiangz@wsu.edu
+      - kschach2@illinois.edu
+      - kschach2@uiuc.edu
+      - leekt@rda.go.kr
+      - lynsey.fairbairn@roslin.ed.ac.uk
+      - peter.saama@pic.com
+      - pkm@life.ku.dk
+      - ranjit@iastate.edu
+      - simius@iastate.edu
+      - southey@illinois.edu
+      - yrt@iastate.edu
+      - zhan.bujie@agrsci.dk
+  ENCODE:
+    write:
+      - human
+    users:
+      - elnitski@mail.nih.gov
+      - hartera@soe.ucsc.edu:
+          write:
+            - mouse
+      - jat51@cam.ac.uk
+      - markd@soe.ucsc.edu:
+          write:
+            - mouse
+  chimp:
+    comment: for testing until we get Chimp ready
+    write:
+      - human
+      - chimp
+    users:
+      - bsenf@fli-leibniz.de
+      - stau@fli-leibniz.de
+  mouse_washu:
+    comment: Mouse annotators at WashU
+    write:
+      - mouse
+      - human
+    users:
+      - ahorton@watson.wustl.edu
+      - avanbrun@wustl.edu
+      - cstrong@watson.wustl.edu
+      - jspieth@watson.wustl.edu
+      - mnhan@watson.wustl.edu
+      - nthane@watson.wustl.edu
+  hgnc:
+    write:
+      - human
+    users:
+      - mjlush@ebi.ac.uk
+      - susan@ebi.ac.uk
+      - hgnc@genenames.org
+      - mwright@ebi.ac.uk:
+          write:
+            - mouse
+            - rat
+  cow_annotation_workshop:
+    write:
+      - cow
+    users:
+      - Ingrid.olsaker@nmbu.no
+      - john.williams@tecnoparco.org
+      - kirsty.jensen@bbsrc.ac.uk
+      - peter.dovc@bfro.uni-lj.si
+      - raffaele.mazza@unicatt.it
+      - rebecca.baxter@bbsrc.ac.uk
+      - richard.leach@bbsrc.ac.uk
+      - sem.genini@tecnoparco.org
+      - terhi.iso-touru@mtt.fi
+      - virpi.ahola@mtt.fi
+  rat_annotation_workshop:
+    write:
+      - rat
+    users:
+      - sebastian.schaefer@mdc-berlin.de
+      - carola.rintisch@mdc-berlin.de
+      - gdomi@well.ox.ac.uk
+      - gwo@well.ox.ac.uk
+#      - shimoyama@mcw.edu
+#      - v.guryev@umcg.nl
+      - Martin.McBride@glasgow.ac.uk
+      - m.dashti.2@research.gla.ac.uk
+      - Wendy.Crawford@glasgow.ac.uk
+      - Liselotte.Backdahl@ki.se
+      - w.spee@hubrecht.eu
+      - s.boymans@hubrecht.eu
+      - m.simonis@hubrecht.eu
+      - Pascal.Gellert@mpi-bn.mpg.de
+      - santosh.atanur@imperial.ac.uk
+      - pletiss@nimr.mrc.ac.uk
+  rat_annotation_workshop_2015:
+    write:
+      - rat
+    read:
+      - mouse
+    users:
+      - michael@michaelgray.info
+      - thibaut@ebi.ac.uk
+      - v.guryev@umcg.nl
+      - shimoyama@mcw.edu
+      - aprilwilliams@uchicago.edu
+      - achitre@uchicago.edu
+      - jgao1@bsd.uchicago.edu
+      - apalmer@bsd.uchicago.edu
+      - agileta@uchicago.edu
+      - hchen@uthsc.edu
+      - spencer.mahaffey@ucdenver.edu
+      - rsparapa@mcw.edu
+      - abeyer@mcw.edu
+      - rdash@mcw.edu
+      - stsaih@mcw.edu
+      - slaulede@mcw.edu
+      - rnigam@mcw.edu
+      - jrsmith@mcw.edu
+      - vpetri@mcw.edu
+      - sjwang@mcw.edu
+      - gthayman@mcw.edu
+      - jdepons@mcw.edu
+      - mtutaj@mcw.edu
+      - amohaimani.mcw.edu
+      - oghisvand@mcw.edu
+      - mrdwinel@mcw.edu
+      - vgogineni@mcw.edu
+      - hehong@mcw.edu
+  lncrna:
+    write:
+      - pig
+    read:
+      - human
+      - mouse
+    users:
+      - sarah.djebali-quelen@toulouse.inra.fr
+      - thomas.derrien@univ-rennes1.fr
+      - pablo.prieto@crg.eu
+      - Evan.Floden@crg.eu
+      - gorodkin@rth.dk
+      - anthon@rth.dk
+      - lel.eory@roslin.ed.ac.uk
+      - ajunge@rth.dk
+      - ole.madsen@wur.nl
+      - seemann@rth.dk
+      - andreiaamaral@fc.ul.pt
+      - ferro@rth.dk
+      - oana.palasca@gmail.com
+  misc:
+    users:
+      - barbara.lazzari@tecnoparco.org:
+          write:
+            - human
+            - sheep
+      - chwu5208@uni.sydney.edu.au:
+          comment: RT:201130 -- mca [jla1]
+          write:
+            - tas_devil
+            - wallaby
+      - jens.kamerewerd@rub.de:
+          write:
+            - sordaria
+      - Lionel.Breuza@isb-sib.ch:
+          comment: SwissProt, to allow them direct access to our latest annotation (RT355808)
+          write:
+            - human
+            - mouse
+      - m.koerner@ed.ac.uk:
+          write:
+            - mouse
+      - mpind@cc.umanitoba.ca:
+          write:
+            - human
+            - mouse
+      - paolo.cozzi@tecnoparco.org:
+          write:
+            - rat
+            - sheep
+      - rosemary.elliott5@gmail.com:
+          write:
+            - mouse
+      - thomas.down@gurdon.cam.ac.uk:
+          comment: RT280926 (no edits expected)
+          write:
+            - human
+            - mouse
+            - pig
+            - tas_devil
+            - zebrafish
+      - y.cheng@usyd.edu.au:
+          comment: mt4 request -- mca
+          write:
+            - tas_devil
+      - jm34:
+          comment: Jolyon Martin
+          write:
+            - dog
+      - mt4.sanger@gmail.com:
+          comment: Mark Thomas test account
+          read:
+            - mouse
+            - pig
+

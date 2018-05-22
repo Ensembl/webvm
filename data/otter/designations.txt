@@ -1,1 +1,23 @@
-../../../server-config/designations.txt
+# Otterlace client version designations, and the set of extant Otter
+# Servers.
+#
+# Intended to be one file giving central control,
+# as in https://rt.sanger.ac.uk/Ticket/Display.html?id=267390#txn-5391104
+#
+# Affects BOL:Client->designate_this and hence the About box. RT#267390
+
+old	105.06
+live	106.10
+dev	107
+
+
+# On the (lack of) expressive power of this file,
+# which might influence data models e.g. for RT#446358
+#
+# Some architectures are sometimes out of sync, e.g. trusty-x86_64
+# initially contains only v88 and nothing earlier; FTP site is more
+# weakly coupled to the designations.
+#
+# We have had difficulty representing major.minor plus feature branch.
+# There is more than one obvious way, and I'm not sure all the tools
+# can cope with...  whichever was chosen as "correct".
