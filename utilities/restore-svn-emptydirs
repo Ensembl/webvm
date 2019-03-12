@@ -1,1 +1,120 @@
-../setup/APACHECTL
+#! /bin/sh
+# Copyright [2018-2019] EMBL-European Bioinformatics Institute
+# 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# 
+#      http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
+WEBDIR="$( dirname $( dirname $( readlink -e $0 ) ))"
+# XXX:UBUNTU GNU-ism.
+
+# These are the Ubuntu defaults.  /usr/sbin is often not on our PATH
+# We need to override for local installs
+APACHE2=/usr/sbin/apache2
+export APACHE2_MODS=/usr/lib/apache2/modules
+export APACHE2_SHARE=/usr/share/apache2
+
+# required vars, not always set from cron
+: ${USER:=$(whoami)}
+: ${HOME:=$(bash -c 'echo ~')} # ugh
+export USER
+#
+# nb. Debian clears $HOME because "it will be wrong", but we do not
+# setuid(2)
+#
+# HOME will not exist on {dev,staging,live} boxes
+
+# We have no specific requirements for these, but they should be
+# well-defined
+export LANG=C
+ulimit -n 1024
+# deskpro users 2013-08 are in "ulimit -H -n 1024"
+
+
+op=$( basename $0 )
+if [ "$op" = 'APACHECTL' ]; then
+    op=$1
+    shift
+fi
+
+apache_defines() {
+    local tok out
+    for tok in $( echo ${WEBDEFS:-vanilla} | tr , ' ' ); do
+	out="$out -D $( echo "$tok" | tr '[:lower:]' '[:upper:]' )"
+    done
+    echo "$out"
+}
+
+WEBTEAM_TYPE="$( perl -e 'print "$1\n" if (shift) =~ m{^/www(?:/[a-z0-9]+)?/(www-\w+)/?$}' "$WEBDIR" )" \
+    || exit 3
+if [ -f "$WEBDIR/setup/APACHECTL.sh" ]; then
+    # Some user-specific config brought onto this branch.
+    # Takes precedence over WEBTEAM_TYPE
+    echo "[d] source $WEBDIR/setup/APACHECTL.sh"
+    . "$WEBDIR/setup/APACHECTL.sh"
+elif [ -n "$WEBTEAM_TYPE" ]; then
+    # Standard configs for www-dev, www-live when running from their
+    # normal location
+    if [ -f "$WEBDIR/setup/$WEBTEAM_TYPE.sh" ]; then
+        echo "[d] source $WEBDIR/setup/$WEBTEAM_TYPE.sh"
+        . "$WEBDIR/setup/$WEBTEAM_TYPE.sh"
+    else
+        echo "[d] expected to source $WEBDIR/setup/$WEBTEAM_TYPE.sh but it is absent"
+    fi
+fi
+
+: ${WEBTMPDIR:="$( echo "$WEBDIR" | sed -e s,^/www/,/www/tmp/, )"}
+[ -d "$WEBTMPDIR" ] && [ -w "$WEBTMPDIR" ] || {
+    echo "Abort: Guessed WEBTMPDIR=$WEBTMPDIR incorrectly from WEBDIR=$WEBDIR, please have it created & writable, or override by environment" >&2
+    exit 2
+}
+
+# Export these because Apache needs to interpolate them into the config
+export WEBDIR WEBTMPDIR
+
+echo "[d] doing $op for WEBDIR=$WEBDIR WEBTMPDIR=$WEBTMPDIR with" $( apache_defines )
+case $op in
+    '' | -h | --help)
+        cat <<INFO
+Syntax: APACHECTL < \$operation > [args]*
+    or  run via a symlink, named for an operation
+
+Operations delegated to the Apache2 httpd are
+ start | restart | graceful | graceful-stop | stop
+
+Other operations are names of executables in $WEBDIR/tools/
+ checkmods     Compare available LoadModules against ServerRoot/mods-available/
+ mkloadmods    Attempt to construct missing ServerRoot/mods-*/*.load
+
+Environment variables affecting the run are documented in README.txt
+
+INFO
+        exit 0
+        ;;
+    start|restart|graceful|graceful-stop|stop) # supported by "apache2 -k"
+        [ $# = 0 ] || echo "[w] $# extra argument(s) ignored" >&2
+        exec $APACHE2 \
+	    $( apache_defines ) \
+            -f "$WEBDIR/ServerRoot/conf/httpd.conf" \
+            -k $op
+        ;;
+    *)
+        if [ -f "$WEBDIR/tools/$op" ] && [ -x "$WEBDIR/tools/$op" ]; then
+            $WEBDIR/tools/$op "$@"
+        else
+            echo "Cannot comprehend op=$op" >&2
+            exit 1
+        fi
+        ;;
+esac
+
+# not reached - exec | exit
