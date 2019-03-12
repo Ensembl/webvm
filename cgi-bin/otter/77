@@ -1,1 +1,35 @@
-_absent
+#!/usr/bin/perl -Tw
+# Copyright [2018-2019] EMBL-European Bioinformatics Institute
+# 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# 
+#      http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
+# Author:        mca
+# Group:         anacode
+
+# Proof of concept obsolescence marker.
+#   single file
+#   for any version
+#   covers the entire major version
+#
+# Later could be done via httpd.conf fragment.
+
+use strict;
+use warnings;
+
+my ($v) = ($ENV{SCRIPT_NAME} || $0) =~ m{/([^/]+)$};
+print "Status: 410 Gone - please upgrade Otterlace
+Content-type: text/plain
+
+Please upgrade your Otterlace client.\n
+You are using version $v which is obsolete.\n\n";
