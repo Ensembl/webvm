@@ -1,0 +1,7 @@
+# Database server changes need making in several places:
+#
+#   - here
+#   - possibly also in satellite stringy-eval meta keys
+---
+dbspec:
+ 
