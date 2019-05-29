@@ -1,0 +1,447 @@
+
+// GeneFinderFeatures
+// 3 Frame
+// 3 Frame Translation
+// pseudogene
+// curated
+// utr
+// Coding_transcript
+// sl1
+// snp
+// genepairs
+// orfeome
+// rnai
+// wublastx_worm
+// wublastx_briggsae
+// wublastx_fly
+// wublastx_yeast
+// wublastx_human
+// wublastx_slimswissprot
+// wublastx_slimtrembl
+// blastn_tc1
+// waba_coding
+// waba_strong
+// waba_weak
+// tandem
+// inverted
+// repeatmasker
+// ATG
+// GF_ATG
+// GF_coding_seg
+// GF_splice
+// hexExon
+// dna
+
+Method : "Gap"
+Style	"Gap"
+
+// Start of HAVANA curated transcript methods
+
+Method : "Coding Transcripts"
+Remark	"Legacy unclassified coding transcripts"
+
+Method : "Coding"
+Column_parent	"Coding Transcripts"
+Style	"havana_tsct"
+Coding
+
+Method : "Known CDS Transcripts"
+Remark	"Known coding transcripts"
+
+Method : "Known_CDS"
+Column_parent	"Known CDS Transcripts"
+Style	"havana_tsct"
+Has_parent
+Coding
+
+Method : "Novel CDS Transcripts"
+Remark	"Novel coding transcripts"
+
+Method : "Novel_CDS"
+Column_parent	"Novel CDS Transcripts"
+Style	"havana_tsct"
+Has_parent
+Coding
+
+Method : "Putative and NMD"
+Remark	"Putative transcripts and transcripts subject to mRNA surveillance decay curated by HAVANA group"
+
+Method : "Putative_CDS"
+Column_parent	"Putative and NMD"
+Style	"havana_tsct"
+Has_parent
+Coding
+
+Method : "Nonsense_mediated_decay"
+Column_parent	"Putative and NMD"
+Style	"curated_NMD"
+Has_parent
+Coding
+
+Method : "Non_stop_decay"
+Column_parent	"Putative and NMD"
+Style	"curated_NSD"
+Has_parent
+Coding
+
+Method : "Curated Transcripts"
+Remark	"Transcripts without CDS curated by HAVANA group"
+
+Method : "Transcript"
+Column_parent	"Curated Transcripts"
+Style	"havana_tsct"
+
+Method : "Retained_intron"
+Column_parent	"Curated Transcripts"
+Style	"retained_intron"
+Has_parent
+
+Method : "Disrupted_domain"
+Column_parent	"Curated Transcripts"
+Style	"havana_tsct"
+Has_parent
+
+Method : "IG_gene"
+Column_parent	"Curated Transcripts"
+Style	"havana_tsct"
+Has_parent
+Coding
+
+Method : "TR_gene"
+Column_parent	"Curated Transcripts"
+Style	"havana_tsct"
+Has_parent
+Coding
+
+Method : "Putative"
+Column_parent	"Curated Transcripts"
+Style	"havana_tsct"
+Has_parent
+
+
+Method : "Non_coding"
+Column_parent	"Curated Transcripts"
+Style	"havana_tsct"
+
+Method : "lincRNA"
+Column_parent	"Curated Transcripts"
+Style	"havana_tsct"
+Has_parent
+
+Method : "macro_lncRNA"
+Column_parent	"Curated Transcripts"
+Style	"havana_tsct"
+Has_parent
+
+Method : "Antisense"
+Column_parent	"Curated Transcripts"
+Style	"havana_tsct"
+Has_parent
+
+Method : "Sense_intronic"
+Column_parent	"Curated Transcripts"
+Style	"havana_tsct"
+Has_parent
+
+Method : "Sense_overlapping"
+Column_parent	"Curated Transcripts"
+Style	"havana_tsct"
+Has_parent
+
+Method : "3'_overlapping_ncRNA"
+Column_parent	"Curated Transcripts"
+Style	"havana_tsct"
+Has_parent
+
+Method : "Bidirectional_promoter_lncRNA"
+Column_parent	"Curated Transcripts"
+Style	"havana_tsct"
+Has_parent
+
+Method : "Known_ncRNA"
+Column_parent	"Curated Transcripts"
+Style	"known_ncrna"
+
+Method : "miRNA"
+Column_parent	"Curated Transcripts"
+Style	"known_ncrna"
+Has_parent
+
+Method : "piRNA"
+Column_parent	"Curated Transcripts"
+Style	"known_ncrna"
+Has_parent
+
+Method : "rRNA"
+Column_parent	"Curated Transcripts"
+Style	"known_ncrna"
+Has_parent
+
+Method : "scRNA"
+Column_parent	"Curated Transcripts"
+Style	"known_ncrna"
+Has_parent
+
+Method : "siRNA"
+Column_parent	"Curated Transcripts"
+Style	"known_ncrna"
+Has_parent
+
+Method : "snRNA"
+Column_parent	"Curated Transcripts"
+Style	"known_ncrna"
+Has_parent
+
+Method : "snoRNA"
+Column_parent	"Curated Transcripts"
+Style	"known_ncrna"
+Has_parent
+
+Method : "tRNA"
+Column_parent	"Curated Transcripts"
+Style	"known_ncrna"
+Has_parent
+
+Method : "vaultRNA"
+Column_parent	"Curated Transcripts"
+Style	"known_ncrna"
+Has_parent
+
+
+Method : "Pseudogene"
+Column_parent	"Curated Transcripts"
+Style	"curated_pseudogene"
+
+Method : "Processed_pseudogene"
+Column_parent	"Curated Transcripts"
+Style	"processed_pseudogene"
+Has_parent
+
+Method : "Unprocessed_pseudogene"
+Column_parent	"Curated Transcripts"
+Style	"curated_pseudogene"
+Has_parent
+
+Method : "Transcribed_processed_pseudogene"
+Column_parent	"Curated Transcripts"
+Style	"curated_pseudogene"
+Has_parent
+
+Method : "Transcribed_unprocessed_pseudogene"
+Column_parent	"Curated Transcripts"
+Style	"curated_pseudogene"
+Has_parent
+
+Method : "Translated_processed_pseudogene"
+Column_parent	"Curated Transcripts"
+Style	"curated_pseudogene"
+Has_parent
+
+Method : "Translated_unprocessed_pseudogene"
+Column_parent	"Curated Transcripts"
+Style	"curated_pseudogene"
+Has_parent
+
+Method : "Unitary_pseudogene"
+Column_parent	"Curated Transcripts"
+Style	"curated_pseudogene"
+Has_parent
+
+Method : "Transcribed_unitary_pseudogene"
+Column_parent	"Curated Transcripts"
+Style	"curated_pseudogene"
+Has_parent
+
+Method : "Polymorphic_pseudogene"
+Column_parent	"Curated Transcripts"
+Style	"curated_pseudogene"
+Coding
+Has_parent
+
+Method : "IG_pseudogene"
+Column_parent	"Curated Transcripts"
+Style	"curated_pseudogene"
+Has_parent
+
+Method : "TR_pseudogene"
+Column_parent	"Curated Transcripts"
+Style	"curated_pseudogene"
+Has_parent
+
+Method : "Transposon"
+Column_parent	"Curated Transcripts"
+Style	"curated_transposon"
+Coding
+
+Method : "Artifact"
+Column_parent	"Curated Transcripts"
+Style	"curated_artifact"
+
+Method : "TEC"
+Column_parent	"Curated Transcripts"
+Style	"curated_TEC"
+
+Method : "Predicted"
+Column_parent	"Curated Transcripts"
+Style	"curated_tsct"
+
+Method : "Computational Pipeline"
+Remark	"Transcripts computationally generated from RNAseq data"
+
+Method : "Comp_pipe"
+Column_parent	"Computational Pipeline"
+Style	"comp_pipe"
+
+// End of HAVANA curated transcript methods
+
+// Features curated using GenomicFeatures window
+
+Method : "curated_features"
+Remark	"Features curated by annotators"
+
+Method : "polyA_signal"
+Column_parent	"curated_features"
+Remark	"PolyA signal"
+Style	"polyA_signal"
+Valid_length 6
+
+Method : "polyA_site"
+Column_parent	"curated_features"
+Remark	"PolyA site"
+Style	"polyA_site"
+Valid_length 2
+
+Method : "polyA-seq_signal"
+Column_parent	"curated_features"
+Remark	"polyA-seq signal"
+Style	"polyA-seq_signal"
+Valid_length 6
+
+Method : "polyA-seq_site"
+Column_parent	"curated_features"
+Remark	"polyA-seq site"
+Style	"polyA-seq_site"
+Valid_length 2
+
+Method : "pseudo_polyA"
+Column_parent	"curated_features"
+Remark "Pseudo-PolyA signal"
+Style	"pseudo_polyA"
+Valid_length 6
+
+Method : "TATA_box"
+Style	"TATA_box"
+Column_parent	"curated_features"
+Remark "TATA-box"
+
+Method : "RSS"
+Style	"RSS"
+Column_parent	"curated_features"
+Remark "Recomb. signal seq."
+Edit_display_label
+
+Method : "EUCOMM"
+Style	"EUCOMM"
+Column_parent	"curated_features"
+Remark	"EUCOMM exon(s)"
+Edit_score
+Edit_display_label
+
+Method : "Ig_Feature"
+Style	"Ig_Feature"
+Column_parent	"curated_features"
+Remark "Immunoglobulin Feature"
+Edit_display_label
+
+
+// Column of transcripts curated by other groups
+
+Method : "ext_curated"
+Remark	"Non-HAVANA curated transcripts"
+
+Method : "ensembl:"
+Column_parent	"ext_curated"
+Style	"ensembl:transcript_style"
+
+Method : "CCDS:"
+Column_parent	"ext_curated"
+Style	"CCDS:transcript_style"
+
+Method : "INT:"
+Column_parent	"ext_curated"
+Style	"INT:transcript_style"
+
+Method : "KO:"
+Column_parent	"ext_curated"
+Style	"KO:transcript_style"
+
+Method : "LOF:"
+Column_parent	"ext_curated"
+Style	"LOF:transcript_style"
+
+Method : "PATCH:"
+Column_parent	"ext_curated"
+Style	"PATCH:transcript_style"
+
+Method : "IRAG:"
+Column_parent	"ext_curated"
+Style	"IRAG:transcript_style"
+
+Method : "Glean"
+Style	"Glean"
+Coding
+
+Method : "NCBI"
+Style	"NCBI"
+Coding
+
+Method : "3 Frame Translation"
+Style "3 Frame Translation"
+
+
+Method : "Show Translation"
+Style "Show Translation"
+
+
+// Columns from ACeDB's Gene Finder code (appear next to protein similarity columns)
+
+Method : "GeneFinderFeatures"
+Style	"GeneFinderFeatures"
+
+Method : "3 Frame"
+Style	"3 Frame"
+
+Method : "ATG"
+Style	"ATG"
+
+Method : "hexExon"
+Style	"hexExon"
+
+Method : "hexIntron"
+Style	"hexIntron"
+
+Method : "GF_coding_seg"
+Style	"GF_coding_seg"
+
+Method : "GF_ATG"
+Style	"GF_ATG"
+
+Method : "hexExon_span"
+Style	"hexExon_span"
+
+Method : "RNA"
+Style	"RNA"
+
+Method : "SPLICED_cDNA"
+Style	"SPLICED_cDNA"
+
+Method : "GF_splice"
+Style "GF_splice"
+Score_by_width
+Score_bounds	-2.000000 4.000000
+
+
+// DNA - do we want it here at the RHS?
+
+Method : "DNA"
+Style	"DNA"
