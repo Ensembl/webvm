@@ -1,0 +1,7 @@
+<IfModule !mpm_event_module>
+<IfModule !mpm_prefork_module>
+<IfModule !mpm_worker_module>
+LoadModule mpm_event_module ${APACHE2_MODS}/mod_mpm_event.so
+</IfModule>
+</IfModule>
+</IfModule>
