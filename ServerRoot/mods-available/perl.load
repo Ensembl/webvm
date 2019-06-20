@@ -1,3 +1,0 @@
-<IfModule !perl_module>
-LoadModule perl_module ${APACHE2_MODS}/mod_perl.so
-</IfModule>

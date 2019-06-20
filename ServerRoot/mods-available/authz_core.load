@@ -1,0 +1,3 @@
+<IfModule !authz_core_module>
+LoadModule authz_core_module ${APACHE2_MODS}/mod_authz_core.so
+</IfModule>
